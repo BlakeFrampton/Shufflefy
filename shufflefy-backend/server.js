@@ -7,18 +7,18 @@ const session = require("express-session");
 const path = require("path");
 
 const app = express();
-app.use(cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'], // Allow methods you want to support
-    allowedHeaders: ['Content-Type', 'Authorization', "Access-Control-Allow-Origin"], // Allow specific headers
+// app.use(cors({
+//     origin: 'http://localhost:3000',
+//     methods: ['GET', 'POST'], // Allow methods you want to support
+//     allowedHeaders: ['Content-Type', 'Authorization', "Access-Control-Allow-Origin"], // Allow specific headers
 
-}));
-// app.use(cors);
+// }));
+app.use(cors);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 5000;
-console.log("start");
+console.log(PORT);
 
 // Spotify API setup
 const spotifyApi = new SpotifyWebApi({
@@ -26,6 +26,7 @@ const spotifyApi = new SpotifyWebApi({
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
     redirectUri: process.env.SPOTIFY_REDIRECT_URI
 });
+
 
 // Use session to store access token
 app.use(session({
@@ -37,9 +38,20 @@ app.use(session({
 // Step 1: Get authorisation code
 app.get("/login", (req, res) => {
     console.log("login");
-    const authUrl = spotifyApi.createAuthorizeURL(["playlist-read-private"]);
+    // const authUrl = spotifyApi.createAuthorizeURL([
+    //     "playlist-read-private",
+    //     "streaming", //webplayback sdk scope
+    //     "user-read-playback-state",
+    //     "user-modify-playback-state"
+    // ], null, false);
+    const authUrl = spotifyApi.createAuthorizeURL([
+        "playlist-read-private",
+    ]);
+    
     console.log("Authorization URL:", authUrl);
+    console.log("Granted scopes: ", spotifyApi.getAccessToken());
     res.redirect(authUrl); // Redirect the user to the Spotify authorization page
+
 });
 
 // Step 2: Get Spotify Auth Token

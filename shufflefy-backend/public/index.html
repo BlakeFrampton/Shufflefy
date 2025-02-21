@@ -35,6 +35,7 @@
 
     </script>
 </head>
+
 <body>
     <h1>Your Playlists</h1>
     <div id="playlists"></div>
@@ -47,6 +48,47 @@
             allowfullscreen="" 
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
             loading="lazy"></iframe>
+
+    <h1>player<script src="https://sdk.scdn.co/spotify-player.js"></script></h1>
+            
+    <script>
+        const player = null;
+        window.onSpotifyWebPlaybackSDKReady = () => {
+        const accessToken = new URLSearchParams(window.location.search).get('accessToken');
+        if (accessToken){
+            console.log("Access token found");
+            const player = new Spotify.Player({
+            name: 'Web Playback SDK Quick Start Player',
+            getOAuthToken: cb => { cb(accessToken); },
+                volume: 0.5
+            });
+
+                    
+        // Ready
+        player.addListener('ready', ({ device_id }) => {
+        console.log('Ready with Device ID', device_id);});
+
+        // Not Ready
+        player.addListener('not_ready', ({ device_id }) => {
+        console.log('Device ID has gone offline', device_id);});
+
+        player.addListener('initialization_error', ({ message }) => {
+      console.error(message);
+        });
+
+  player.addListener('authentication_error', ({ message }) => {
+      console.error(message);
+  });
+
+  player.addListener('account_error', ({ message }) => {
+      console.error(message);
+  });
+        player.connect();
+    }
+    }
+
+
+    </script>
 
     <script>
         // Assuming you already have the access token stored in accessToken variable
@@ -97,7 +139,6 @@
 
             const audioPlayer = document.getElementById('spotifyEmbed');
             audioPlayer.src = `https://open.spotify.com/embed/track/${trackUri.split(':')[2]}`;
-            audioPlayer.play();
         }
 
         fetchPlaylists();
