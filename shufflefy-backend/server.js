@@ -1,4 +1,3 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
@@ -7,12 +6,12 @@ const session = require("express-session");
 const path = require("path");
 
 const app = express();
+console.log(process.env.SESSION_SECRET || 'default_secret');
 
 app.use(session({
-    secret: process.env.SESSION_SECRET, // Use an environment variable or default secret
+    secret: process.env.SESSION_SECRET || 'default_secret', // Use an environment variable or default secret
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' } // Set to true if using HTTPS
 }));
 
 app.use(cors());
@@ -28,14 +27,6 @@ const spotifyApi = new SpotifyWebApi({
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
     redirectUri: process.env.SPOTIFY_REDIRECT_URI
 });
-
-
-// Use session to store access token
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true
-}))
 
 // Step 1: Get authorisation code
 app.get("/login", (req, res) => {
