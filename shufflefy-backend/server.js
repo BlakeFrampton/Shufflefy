@@ -7,13 +7,7 @@ const session = require("express-session");
 const path = require("path");
 
 const app = express();
-// app.use(cors({
-//     origin: 'http://localhost:3000',
-//     methods: ['GET', 'POST'], // Allow methods you want to support
-//     allowedHeaders: ['Content-Type', 'Authorization', "Access-Control-Allow-Origin"], // Allow specific headers
-
-// }));
-app.use(cors);
+app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -38,18 +32,9 @@ app.use(session({
 // Step 1: Get authorisation code
 app.get("/login", (req, res) => {
     console.log("login");
-    // const authUrl = spotifyApi.createAuthorizeURL([
-    //     "playlist-read-private",
-    //     "streaming", //webplayback sdk scope
-    //     "user-read-playback-state",
-    //     "user-modify-playback-state"
-    // ], null, false);
-    const authUrl = spotifyApi.createAuthorizeURL([
-        "playlist-read-private",
-    ]);
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=streaming user-read-email user-read-private user-modify-playback-state&show_dialog=true`;
     
     console.log("Authorization URL:", authUrl);
-    console.log("Granted scopes: ", spotifyApi.getAccessToken());
     res.redirect(authUrl); // Redirect the user to the Spotify authorization page
 
 });
@@ -66,6 +51,7 @@ app.get("/callback", async (req, res) => {
         const expiresIn = data.body.expires_in; // Token expiration time
         
         console.log("Access Token: ", accessToken);
+        console.log("Scopes received: ", accessToken.scope)
         // store accessToken in session
         req.session.accessToken = accessToken;
         
@@ -88,58 +74,6 @@ app.post("/refresh", async (req, res) => {
     } catch (err) {
         console.error("Error refreshing token:", err);
         res.status(400).json({ error: "Could not refresh token" });
-    }
-});
-
-// Step 3: Fetch User's Playlists
-app.get("/playlists", async (req, res) => {
-    console.log("Fetching playlists...");
-    // Retrieve accessToken from session
-    const accessToken = req.session.accessToken;
-
-    if (!accessToken){
-        console.error("No access token in /playlists");
-    }
-
-    spotifyApi.setAccessToken(accessToken);
-
-    try {
-        const data = await spotifyApi.getUserPlaylists();
-        res.json(data.body.items); // Send the playlists data back
-    } catch (err) {
-        console.error("Error fetching playlists:", err);
-        res.status(400).json({ error: "Could not fetch playlists" });
-    }
-});
-
-app.get("/playlists/:playlistId/tracks", async (req, res) => {
-    const {playlistId} = req.params;
-    const accessToken = req.session.accessToken;
-
-    if (!accessToken){
-        return console.error("no access token in /playlists/:playlistId/tracks")
-    }
-
-    spotifyApi.setAccessToken(accessToken);
-
-    try {
-        const data = await spotifyApi.getPlaylistTracks(playlistId);
-        res.json(data.body.items); //store tracks in playlist
-    } catch (err) {
-        console.error("Error fetching tracks: ", err);
-    }
-})
-
-
-// Step 4: Smart Shuffle Algorithm (to be implemented)
-app.post("/shuffle", async (req, res) => {
-    const { playlistId } = req.body;
-    try {
-        // TODO: Implement ticket-based shuffle logic here
-        res.json({ message: "Shuffle algorithm will go here" });
-    } catch (err) {
-        console.error("Error shuffling playlist:", err);
-        res.status(500).json({ error: "Shuffle failed" });
     }
 });
 

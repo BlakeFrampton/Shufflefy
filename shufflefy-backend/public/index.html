@@ -50,98 +50,128 @@
             loading="lazy"></iframe>
 
     <h1>player<script src="https://sdk.scdn.co/spotify-player.js"></script></h1>
+    <button id="togglePlay">Toggle Play</button>
             
     <script>
-        const player = null;
-        window.onSpotifyWebPlaybackSDKReady = () => {
+    let player = null;
+    let deviceId = null;
+    let playerReady = false;
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
         const accessToken = new URLSearchParams(window.location.search).get('accessToken');
         if (accessToken){
-            console.log("Access token found");
-            const player = new Spotify.Player({
-            name: 'Web Playback SDK Quick Start Player',
-            getOAuthToken: cb => { cb(accessToken); },
+            player = new Spotify.Player({
+                name: 'Shufflefy',
+                getOAuthToken: cb => { cb(accessToken); },
                 volume: 0.5
             });
 
                     
-        // Ready
-        player.addListener('ready', ({ device_id }) => {
-        console.log('Ready with Device ID', device_id);});
+            // Ready
+            player.addListener('ready', ({ device_id }) => {
+                deviceId = device_id;
+                playerReady = true;
+            });
 
-        // Not Ready
-        player.addListener('not_ready', ({ device_id }) => {
-        console.log('Device ID has gone offline', device_id);});
+            // Not Ready
+            player.addListener('not_ready', ({ device_id }) => {
+                console.log('Device ID has gone offline', device_id);
+                playerReady = false;
+            });
 
-        player.addListener('initialization_error', ({ message }) => {
-      console.error(message);
+            player.addListener('initialization_error', ({ message }) => {
+                console.error(message);
+            });
+
+            player.addListener('authentication_error', ({ message }) => {
+                console.error(message);
+            });
+
+            player.addListener('account_error', ({ message }) => {
+                console.error(message);
+            });
+
+            player.connect();
+        }
+    }
+
+    document.getElementById('togglePlay').onclick = function() {
+        player.togglePlay();
+    };
+
+    // Assuming you already have the access token stored in accessToken variable
+    const accessToken = new URLSearchParams(window.location.search).get('accessToken');
+
+    async function fetchPlaylists() {
+        const response = await fetch('http://localhost:5000/playlists', {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
         });
 
-  player.addListener('authentication_error', ({ message }) => {
-      console.error(message);
-  });
-
-  player.addListener('account_error', ({ message }) => {
-      console.error(message);
-  });
-        player.connect();
-    }
+        const data = await response.json();
+        displayPlaylists(data);
     }
 
+    function displayPlaylists(playlists) {
+        const playlistsContainer = document.getElementById('playlists');
+        playlistsContainer.innerHTML = ''; // Clear previous content
 
-    </script>
+        playlists.forEach((playlist) => {
+            const playlistDiv = document.createElement('div');
+            playlistDiv.textContent = playlist.name;
+            playlistDiv.style.cursor = 'pointer';
+            playlistDiv.onclick = () => playRandomSong(playlist.id);
+            playlistsContainer.appendChild(playlistDiv);
+        });
+    }
 
-    <script>
-        // Assuming you already have the access token stored in accessToken variable
-        const accessToken = new URLSearchParams(window.location.search).get('accessToken');
+    async function playRandomSong(playlistId) {
+        console.log("PlaylistId:", playlistId)
+        const response = await fetch(`http://localhost:5000/playlists/${playlistId}/tracks`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
 
-        async function fetchPlaylists() {
-            const response = await fetch('http://localhost:5000/playlists', {
+        const data = await response.json();
+
+        const randomTrack = data[Math.floor(Math.random() * data.length)];
+        const trackUri = randomTrack.track.uri;
+        console.log(trackUri);
+        const trackEmbedUri = `https://open.spotify.com/embed/track/${trackUri.split(':')[2]}`;
+
+        const spotifyEmbed = document.getElementById('spotifyEmbed');
+        spotifyEmbed.src = trackEmbedUri;
+
+        await playTrack(trackUri);
+    }
+
+    async function playTrack(trackUri) {
+        console.log("trackUri: ",trackUri);
+        if (playerReady){
+            const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+                method: 'PUT',
                 headers: {
-                    Authorization: `Bearer ${accessToken}`,
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({
+                    uris: [trackUri],
+                }),
             });
 
-            const data = await response.json();
-            displayPlaylists(data);
+            if (response.ok) {
+                console.log('Playback started successfully');
+            } else {
+                console.error('Failed to start playback:', response.statusText);
+            }
+        } else {
+            console.error("Player not ready");
         }
+    }
 
-        function displayPlaylists(playlists) {
-            const playlistsContainer = document.getElementById('playlists');
-            playlistsContainer.innerHTML = ''; // Clear previous content
-
-            playlists.forEach((playlist) => {
-                const playlistDiv = document.createElement('div');
-                playlistDiv.textContent = playlist.name;
-                playlistDiv.style.cursor = 'pointer';
-                playlistDiv.onclick = () => playRandomSong(playlist.id);
-                playlistsContainer.appendChild(playlistDiv);
-            });
-        }
-
-        async function playRandomSong(playlistId) {
-            console.log("PlaylistId:", playlistId)
-            const response = await fetch(`http://localhost:5000/playlists/${playlistId}/tracks`, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            });
-
-            console.log("Response Status:", response.status);
-
-            const data = await response.json();
-            console.log("Tracks Data:", data);
-            console.log("Song data:", data[0]);
-
-            const randomTrack = data[Math.floor(Math.random() * data.length)];
-            const trackUri = randomTrack.track.uri;
-            console.log("trackUri", trackUri);
-            console.log(trackUri.split(':')[2]);
-
-            const audioPlayer = document.getElementById('spotifyEmbed');
-            audioPlayer.src = `https://open.spotify.com/embed/track/${trackUri.split(':')[2]}`;
-        }
-
-        fetchPlaylists();
+    fetchPlaylists();
     </script>
 </body>
 
