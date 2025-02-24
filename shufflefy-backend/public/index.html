@@ -212,7 +212,7 @@
     const accessToken = new URLSearchParams(window.location.search).get('accessToken');
 
     async function fetchPlaylists() {
-        const response = await fetch(rootUri +  + '/playlists', {
+        const response = await fetch(rootUri + '/playlists', {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
