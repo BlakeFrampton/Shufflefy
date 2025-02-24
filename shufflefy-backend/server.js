@@ -77,6 +77,92 @@ app.post("/refresh", async (req, res) => {
     }
 });
 
+app.post('/api/play-track', async (req, res) => {
+    const { trackUri , deviceId} = req.body;
+
+    try {
+        const response = await axios.put(
+            `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+            { uris: [trackUri] },
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.SPOTIFY_ACCESS_TOKEN}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error playing track:', error.response ? error.response.data : error.message);
+        res.status(error.response?.status || 500).json({ error: error.response?.data || 'Failed to play track' });
+    }
+});
+
+app.post('/api/add-to-queue', async (req, res) => {
+    const { trackUri } = req.body;
+    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN; // Get the token securely
+
+    if (!trackUri) {
+        return res.status(400).json({ error: 'Track URI is required' });
+    }
+
+    try {
+        const response = await fetch('https://api.spotify.com/v1/me/player/queue?uri=' + encodeURIComponent(trackUri), {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: 'Failed to add track to queue' });
+        }
+
+        res.json({ message: 'Track added to queue' });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/get-random-song', async (req, res) => {
+    const { playlistId } = req.query;
+    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN; // Securely stored in environment variables
+
+    if (!playlistId) {
+        return res.status(400).json({ error: 'Playlist ID is required' });
+    }
+
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: 'Failed to fetch playlist tracks' });
+        }
+
+        const data = await response.json();
+
+        if (!data.items || data.items.length === 0) {
+            return res.status(404).json({ error: 'No tracks found in the playlist' });
+        }
+
+        const randomTrack = data.items[Math.floor(Math.random() * data.items.length)];
+        const trackUri = randomTrack.track.uri;
+
+        res.json({ trackUri });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
 
 // Start the server
 app.listen(PORT, () => {
