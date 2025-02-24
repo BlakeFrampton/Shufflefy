@@ -36,11 +36,11 @@
     color: #ffffff;
   }
   .progress-container {
-    height: 5px;
-    background: #ff0000;
+    height: 10px;
+    background: #000;
   }
   .progress-bar {
-    height: 5px;
+    height: 100%;
     background: #1db954;
     width: 0%;
   }
