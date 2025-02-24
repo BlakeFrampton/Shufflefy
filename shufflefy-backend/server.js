@@ -56,7 +56,7 @@ app.get("/callback", async (req, res) => {
         req.session.accessToken = accessToken;
         
         //Store accessToken in frontend
-        res.redirect(`http://localhost:5000/?accessToken=${accessToken}`);
+        res.redirect(process.env.SPOTIFY_CLIENT_ID + `/?accessToken=${accessToken}`);
     } catch (err) {
         console.error("Error logging in:", err);
         res.status(400).json({ error: "Authentication failed" });
@@ -80,5 +80,5 @@ app.post("/refresh", async (req, res) => {
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });

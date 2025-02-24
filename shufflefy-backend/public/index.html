@@ -9,37 +9,30 @@
 </head>
 
 <body>
-    <h1>Your Playlists</h1>
-    <div id="playlists"></div>
-    <iframe id ="spotifyEmbed"
-            style="border-radius:12px"
-            src="https://open.spotify.com/embed/track/18yAbyPSVNOypgT1iM7GU6?utm_source=generator" 
-            width="100%" 
-            height="352" 
-            frameBorder="0" 
-            allowfullscreen="" 
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-            loading="lazy"></iframe>
-
+    <h1>Shufflefy</h1>
     
     <script src="https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js"></script>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
-    <div class="player-container" id="playerContainer">
-        <img class="album-art" id="albumArt" src="https://via.placeholder.com/300" alt="Album Art">
-        <div class="track-info">
-          <div class="track-title" id="trackTitle">Track Title</div>
-          <div class="artist-name" id="artistName">Artist Name</div>
-        </div>
-        <div class="controls">
-          <button onclick="previousTrack()">&#9664;&#9664;</button>
-          <button onclick="togglePlayPause()">&#9654;</button>
-          <button onclick="nextTrack()">&#9654;&#9654;</button>
-        </div>
-        <div class="progress-container" id="progressContainer">
-          <div class="progress-bar" id="progressBar"></div>
+    <div id="container">
+        <div id="playlists"></div>
+        <div class="player-container" id="playerContainer">
+            <img class="album-art" id="albumArt" src="https://via.placeholder.com/300" alt="Album Art">
+            <div class="track-info">
+              <div class="track-title" id="trackTitle">Track Title</div>
+              <div class="artist-name" id="artistName">Artist Name</div>
+            </div>
+            <div class="controls">
+              <button onclick="previousTrack()">&#9664;&#9664;</button>
+              <button onclick="togglePlayPause()">&#9654;</button>
+              <button onclick="nextTrack()">&#9654;&#9654;</button>
+            </div>
+            <div class="progress-container" id="progressContainer">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
         </div>
     </div>
+    
 
 
             
@@ -49,7 +42,7 @@
 
         //If user is not logged in, redirect to login
         if (!accessToken) {
-            window.location.href = "http://localhost:5000/login";
+            window.location.href = process.env.SPOTIFY_CLIENT_ID + "/login";
         } else {
             fetchPlaylists();
         }
@@ -217,7 +210,7 @@
     const accessToken = new URLSearchParams(window.location.search).get('accessToken');
 
     async function fetchPlaylists() {
-        const response = await fetch('http://localhost:5000/playlists', {
+        const response = await fetch(process.env.SPOTIFY_CLIENT_ID +  + '/playlists', {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
@@ -228,17 +221,35 @@
     }
 
     function displayPlaylists(playlists) {
-        const playlistsContainer = document.getElementById('playlists');
-        playlistsContainer.innerHTML = ''; // Clear previous content
+    const playlistsContainer = document.getElementById('playlists');
+    playlistsContainer.innerHTML = ''; // Clear previous content
 
-        playlists.forEach((playlist) => {
-            const playlistDiv = document.createElement('div');
-            playlistDiv.textContent = playlist.name;
-            playlistDiv.style.cursor = 'pointer';
-            playlistDiv.onclick = () => playlistChosen(playlist.id);
-            playlistsContainer.appendChild(playlistDiv);
-        });
-    }
+    playlists.forEach((playlist) => {
+        // Create a container for each playlist
+        const playlistDiv = document.createElement('div');
+        playlistDiv.classList.add('playlist-item'); // Add a class for styling
+        playlistDiv.style.cursor = 'pointer';
+        playlistDiv.onclick = () => playlistChosen(playlist.id);
+
+        // Create an image element for the playlist cover
+        const img = document.createElement('img');
+        img.src = playlist.images[0].url; // Use the first image as the cover
+        img.alt = `${playlist.name} cover`;
+        img.classList.add('playlist-image'); // Add a class for styling
+
+        // Create a title element for the playlist name
+        const title = document.createElement('h3');
+        title.textContent = playlist.name;
+        title.classList.add('playlist-title'); // Add a class for styling
+
+        // Append the image and title to the playlistDiv
+        playlistDiv.appendChild(img);
+        playlistDiv.appendChild(title);
+
+        // Append the playlistDiv to the container
+        playlistsContainer.appendChild(playlistDiv);
+    });
+}
 
     async function playlistChosen(playlist_id){
         playlistId = playlist_id;
@@ -250,7 +261,7 @@
     }
 
     async function getRandomSong(playlistId) {
-        const response = await fetch(`http://localhost:5000/playlists/${playlistId}/tracks`, {
+        const response = await fetch(process.env.SPOTIFY_CLIENT_ID + `/playlists/${playlistId}/tracks`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
@@ -260,10 +271,6 @@
 
         const randomTrack = data[Math.floor(Math.random() * data.length)];
         const trackUri = randomTrack.track.uri;
-        const trackEmbedUri = `https://open.spotify.com/embed/track/${trackUri.split(':')[2]}`;
-
-        const spotifyEmbed = document.getElementById('spotifyEmbed');
-        spotifyEmbed.src = trackEmbedUri;
 
         return trackUri;
     }

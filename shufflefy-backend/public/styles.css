@@ -1,8 +1,26 @@
+body {
+  background-color: #212121;
+  color: #ffffff;
+}
 .player-container {
-    width: 300px;
+    width: 300px; /* Set a fixed width for the player */
+    max-height: 450px; /* Limit the height of the player */
+    display: flex; /* Use flexbox for the player layout */
+    flex-direction: column; /* Stack elements vertically */
+    justify-content: space-between; /* Space between elements */
+    align-items: center; /* Stretch items to fill the width */
+    margin-left: auto; /* Center in the remaining space */
+    margin-right: auto; /* Space from the right */
+    background-color: #282828; /* Optional: background color for the player */
+    border-radius: 8px; /* Optional: rounded corners */
+    padding: 20px; /* Optional: padding inside the player */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Optional: shadow for the player */
+    position: relative; /* Ensure position is relative for better control */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%); /* Adjust to center */
     border: 1px solid #ddd;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: flex;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     display: none; /* Start hidden */
     transition: background-color 0.3s ease;
@@ -36,7 +54,7 @@
     color: #ffffff;
   }
   .progress-container {
-    height: 10px;
+    height: 5px;
     background: #000;
   }
   .progress-bar {
@@ -52,3 +70,49 @@
   .player-hidden {
     display: none;
   }
+
+  .playlist-item {
+    display: flex;
+    align-items: center; /* Vertically center items */
+    width: 300px; /* Adjust the width as needed */
+    margin: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #121212; /* Spotify green */
+    color: white;
+    transition: transform 0.2s;
+}
+
+.playlist-item:hover {
+    transform: scale(1.05);
+}
+
+.playlist-image {
+    width: 75px; /* Set a fixed width for the image */
+    height: 75px; /* Set a fixed height for the image */
+    border-radius: 8px;
+    margin-right: 10px; /* Space between image and title */
+}
+
+.playlist-title {
+    font-size: 16px; /* Adjust the font size as needed */
+    text-align: left; /* Align the text to the left */
+    margin: 0; /* Remove default margin */
+}
+
+#container {
+  display: flex; /* Use flexbox layout */
+  justify-content: space-between; /* Space between playlists and player */
+  width: 100%; /* Full width of the container */
+  height: 90vh; /* Full height of the viewport */
+}
+
+#playlists {
+  display: grid; /* Use CSS Grid */
+  grid-template-columns: repeat(2, 1fr); /* Create two equal columns */
+  gap: 10px; /* Space between items */
+  max-width: 50%; /* Set a max width for the playlist container */
+  width: auto; /* Allow it to shrink based on content */
+  margin-right: 20px; /* Space between playlists and player */
+  overflow-y: auto; /* Allow scrolling if there are many playlists */
+}
