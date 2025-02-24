@@ -7,6 +7,14 @@ const session = require("express-session");
 const path = require("path");
 
 const app = express();
+
+app.use(session({
+    secret: process.env.SESSION_SECRET, // Use an environment variable or default secret
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: process.env.NODE_ENV === 'production' } // Set to true if using HTTPS
+}));
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
