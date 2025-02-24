@@ -3,37 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+
     <title>Shufflefy</title>
-    <script>
-        function checkAuth() {
-            const accessToken = new URLSearchParams(window.location.search).get('accessToken');
-            console.log("Accesstoken: ", accessToken);
-
-            //If user is not logged in, redirect to login
-            if (!accessToken) {
-                console.log("to login");
-                window.location.href = "http://localhost:5000/login";
-            } else {
-                fetchPlaylists();
-            }
-        }
-        
-        window.onload = checkAuth;
-
-        function fetchPlaylists() {
-            // Fetch the playlists from your backend
-            fetch("http://localhost:5000/playlists")
-                .then(response => response.json())
-                .then(data => {
-                    console.log("Playlists:", data);
-                    // Logic to display playlists on the UI
-                })
-                .catch(error => console.error("Error fetching playlists:", error));
-        }
-
-        // Call checkAuth on page load
-
-    </script>
 </head>
 
 <body>
@@ -49,10 +21,43 @@
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
             loading="lazy"></iframe>
 
-    <h1>player<script src="https://sdk.scdn.co/spotify-player.js"></script></h1>
-    <button id="togglePlay">Toggle Play</button>
+    
+    <script src="https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js"></script>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+
+    <div class="player-container" id="playerContainer">
+        <img class="album-art" id="albumArt" src="https://via.placeholder.com/300" alt="Album Art">
+        <div class="track-info">
+          <div class="track-title" id="trackTitle">Track Title</div>
+          <div class="artist-name" id="artistName">Artist Name</div>
+        </div>
+        <div class="controls">
+          <button onclick="previousTrack()">&#9664;&#9664;</button>
+          <button onclick="togglePlayPause()">&#9654;</button>
+          <button onclick="nextTrack()">&#9654;&#9654;</button>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+
             
     <script>
+    function checkAuth() {
+        const accessToken = new URLSearchParams(window.location.search).get('accessToken');
+        console.log("Accesstoken: ", accessToken);
+
+        //If user is not logged in, redirect to login
+        if (!accessToken) {
+            window.location.href = "http://localhost:5000/login";
+        } else {
+            fetchPlaylists();
+        }
+    }
+        
+    window.onload = checkAuth;
+
     let player = null;
     let deviceId = null;
     let playerReady = false;
@@ -71,12 +76,14 @@
             player.addListener('ready', ({ device_id }) => {
                 deviceId = device_id;
                 playerReady = true;
+                startProgressUpdates()
             });
 
             // Not Ready
             player.addListener('not_ready', ({ device_id }) => {
                 console.log('Device ID has gone offline', device_id);
                 playerReady = false;
+                stopProgressUpdates();
             });
 
             player.addListener('initialization_error', ({ message }) => {
@@ -91,13 +98,103 @@
                 console.error(message);
             });
 
+            player.addListener('player_state_changed', state => {
+                // Update UI
+                if (state) {
+                    updateUI(state);
+                }
+            });
+
             player.connect();
         }
     }
 
-    document.getElementById('togglePlay').onclick = function() {
-        player.togglePlay();
+    function darkenColor(color, factor) {
+        const hex = color.slice(1); // Remove the '#' from the beginning
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        const rgb = [r, g, b]; // Create an array of RGB values
+        const darkenedColor = rgb.map(channel => Math.max(0, channel - factor));
+        return `rgb(${darkenedColor.join(',')})`;
+    }
+
+    function updateUI(state){
+        console.log(playerReady);
+        updatePlayerVisibility(state); 
+        const playerContainer = document.getElementById('playerContainer');
+        const albumArt = document.getElementById('albumArt');
+
+        const currentTrack = state.track_window.current_track;
+        document.getElementById('trackTitle').textContent = currentTrack.name;
+        document.getElementById('artistName').textContent = currentTrack.artists.map(artist => artist.name).join(', ');
+        albumArt.src = currentTrack.album.images[0].url;
+
+        Vibrant.from(albumArt.src).getPalette().then((palette) => {
+            const dominantColor = palette.Vibrant.getHex(); // Get dominant color
+            console.log("dominant colour ", dominantColor);
+            const darkenedColor = darkenColor(dominantColor, 50);
+            playerContainer.style.backgroundColor = darkenedColor; // Update player background color
+        });
+
+        // Update progress bar (example calculation)
+        let progress = (state.position / state.duration) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    let updateProgressInterval;
+
+    function updateProgress() {
+        if (player) {
+            player.getCurrentState().then(state => {
+                if (state && !state.paused) {
+                    let progress = (state.position / state.duration) * 100;
+                    document.getElementById('progressBar').style.width = progress + '%'; // Update the progress bar
+                }
+            });
+        }
+    }
+
+    function startProgressUpdates() {
+        if (!updateProgressInterval) {
+            updateProgressInterval = setInterval(updateProgress, 500); // Update half second
+        }
+    }
+
+    function stopProgressUpdates() {
+        clearInterval(updateProgressInterval);
+        updateProgressInterval = null;
+    }   
+
+    //Hide player until a track is loaded
+    function updatePlayerVisibility(state) {
+      const playerContainer = document.getElementById('playerContainer');
+      if (player && deviceId && state.track_window.current_track) {
+        playerContainer.classList.add('player-visible');
+        playerContainer.classList.remove('player-hidden');
+      } else {
+        playerContainer.classList.add('player-hidden');
+        playerContainer.classList.remove('player-visible');
+      }
+    }
+
+    function togglePlayPause(){
+        if (playerReady){
+            player.togglePlay();
+        }
     };
+
+    function previousTrack(){
+        if (playerReady){
+            player.previousTrack();
+        }
+    };
+
+    function nextTrack(){
+        if (playerReady){
+            player.nextTrack();
+        }
+    }
 
     // Assuming you already have the access token stored in accessToken variable
     const accessToken = new URLSearchParams(window.location.search).get('accessToken');

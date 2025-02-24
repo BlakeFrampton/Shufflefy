@@ -1,0 +1,54 @@
+.player-container {
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    display: none; /* Start hidden */
+    transition: background-color 0.3s ease;
+  }
+  .album-art {
+    width: 100%;
+    height: auto;
+  }
+  .track-info {
+    padding: 10px;
+  }
+  .track-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+  }
+  .artist-name {
+    font-size: 14px;
+    color: #b8b8b8;
+  }
+  .controls {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+  }
+  .controls button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #ffffff;
+  }
+  .progress-container {
+    height: 5px;
+    background: #ff0000;
+  }
+  .progress-bar {
+    height: 5px;
+    background: #1db954;
+    width: 0%;
+  }
+
+  .player-visible {
+    display: block;
+  }
+  
+  .player-hidden {
+    display: none;
+  }
