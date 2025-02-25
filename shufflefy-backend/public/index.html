@@ -258,7 +258,7 @@
         playlistId = playlist_id;
         currentTrackUri = await getRandomSong(playlistId);
         await playTrack(currentTrackUri);
-        updateUI(player.GetCurrentState()); //State change occurs before state is fully setup, so call manually
+        updateUI(player.getCurrentState()); //State change occurs before state is fully setup, so call manually
         addToQueue(await getRandomSong(playlistId));
         addToQueue(await getRandomSong(playlistId));
         addToQueue(await getRandomSong(playlistId));
