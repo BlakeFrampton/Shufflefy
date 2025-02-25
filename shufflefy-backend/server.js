@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 5000;
-console.log(PORT);
+console.log("Port:", PORT);
 
 // Spotify API setup
 const spotifyApi = new SpotifyWebApi({
@@ -51,8 +51,10 @@ app.get("/callback", async (req, res) => {
         req.session.accessToken = data.body.access_token; // Access token
         const refreshToken = data.body.refresh_token; // Refresh token
         const expiresIn = data.body.expires_in; // Token expiration time
+        const grantedScopes = data.body.scope; 
         
         console.log("Access Token: ", req.session.accessToken);
+        console.log("Granted scopes: ", grantedScopes);
         
 
         //Store accessToken in frontend
@@ -80,9 +82,10 @@ app.post("/refresh", async (req, res) => {
     }
 });
 
+
 // Fetch playlists from Spotify API
 app.get('/playlists', async (req, res) => {
-    console.log(req.session.accessToken)
+    console.log("session access token:", req.session.accessToken)
     if (!req.session.accessToken) {
         return res.status(401).json({ error: 'Missing access token' });
     }
