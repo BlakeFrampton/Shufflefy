@@ -282,7 +282,7 @@
 
     async function getRandomSong(playlistId) {
     try {
-        const response = await fetch(`/api/get-random-song?playlistId=${playlistId}`);
+        const response = await fetch(rootUri + `/api/get-random-song?playlistId=${playlistId}`);
 
         if (!response.ok) {
             throw new Error(`Error fetching random song: ${response.statusText}`);
@@ -299,7 +299,7 @@
 
     async function playTrack(trackUri) {
         if (playerReady){
-            const response = await fetch(`/api/play-track`, {
+            const response = await fetch(rootUri + `/api/play-track`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ trackUri, deviceId })
@@ -319,7 +319,7 @@
 
     async function addToQueue(trackUri) {
         try {
-            const response = await fetch('/api/add-to-queue', {
+            const response = await fetch(rootUri + '/api/add-to-queue', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
