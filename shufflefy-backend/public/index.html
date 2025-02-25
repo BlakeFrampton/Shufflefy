@@ -258,11 +258,28 @@
         playlistId = playlist_id;
         currentTrackUri = await getRandomSong(playlistId);
         await playTrack(currentTrackUri);
-        updateUI(player.getCurrentState()); //State change occurs before state is fully setup, so call manually
+        waitForTrack(player).then((track) => {
+            console.log("Track is now available:", track);
+            updateUI(player.getCurrentState());
+        });
         addToQueue(await getRandomSong(playlistId));
         addToQueue(await getRandomSong(playlistId));
         addToQueue(await getRandomSong(playlistId));
     }
+
+    function waitForTrack(player) {
+    return new Promise((resolve) => {
+        const checkTrack = async () => {
+            const state = await player.getCurrentState();
+            if (state && state.track_window.current_track) {
+                resolve(state.track_window.current_track);
+            } else {
+                setTimeout(checkTrack, 100); // Check again after 100ms
+            }
+        };
+        checkTrack(); // Start checking
+    });
+}
 
     async function getRandomSong(playlistId) {
     try {
