@@ -96,17 +96,13 @@
             });
 
             player.connect();
-            
-            const initialState = await player.getCurrentState();
-            if (initialState) {
-                updateUI(initialState);
-                currentTrackUri = initialState.track_window.current_track.uri;
-            }
 
             player.addListener('player_state_changed', async state =>  {
-                if (state) {
-                    if (currentTrackUri != state.track_window.current_track.uri){
-                        updateUI(state);
+                // Get state using async function to avoid error where first state is null
+                let playerState = await player.getCurrentState();
+                if (playerState) {
+                    if (currentTrackUri != playerState.track_window.current_track.uri){
+                        updateUI(playerState);
                         currentTrackUri = state.track_window.current_track.uri
                         const newTrackUri = await getRandomSong(playlistId);
                         addToQueue(newTrackUri);
