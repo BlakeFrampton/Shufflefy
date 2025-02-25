@@ -55,7 +55,7 @@ app.get("/callback", async (req, res) => {
         console.log("Access Token: ", accessToken);
         
         //Store accessToken in frontend
-        res.redirect(process.env.SPOTIFY_REDIRECT_URI + `/?accessToken=${accessToken}`);
+        res.redirect(process.env.ROOT_URI + `/?accessToken=${accessToken}`);
     } catch (err) {
         console.error("Error logging in:", err);
         res.status(400).json({ error: "Authentication failed" });
