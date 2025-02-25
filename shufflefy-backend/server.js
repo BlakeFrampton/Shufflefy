@@ -5,13 +5,15 @@ const SpotifyWebApi = require("spotify-web-api-node");
 const session = require("express-session");
 const path = require("path");
 
-const app = express();
-console.log(process.env.SESSION_SECRET || 'default_secret');
+require('dotenv').config();
 
+const app = express();
 app.use(session({
     secret: process.env.SESSION_SECRET || 'default_secret', // Use an environment variable or default secret
     resave: false,
     saveUninitialized: true,
+    //Secure means requires HTTPS, SET TRUE FOR DEPLOY
+    cookie: { secure: true, httpOnly: true, sameSite: "Lax" }
 }));
 
 app.use(cors());
@@ -20,8 +22,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 5000;
 console.log(PORT);
-
-let accessToken = null;
 
 // Spotify API setup
 const spotifyApi = new SpotifyWebApi({
@@ -48,14 +48,15 @@ app.get("/callback", async (req, res) => {
     if (code){
     try {
         const data = await spotifyApi.authorizationCodeGrant(code); // Exchange the code for tokens
-        accessToken = data.body.access_token; // Access token
+        req.session.accessToken = data.body.access_token; // Access token
         const refreshToken = data.body.refresh_token; // Refresh token
         const expiresIn = data.body.expires_in; // Token expiration time
         
-        console.log("Access Token: ", accessToken);
+        console.log("Access Token: ", req.session.accessToken);
         
+
         //Store accessToken in frontend
-        res.redirect(process.env.ROOT_URI + `/?accessToken=${accessToken}`);
+        res.redirect(process.env.ROOT_URI + `/?accessToken=${req.session.accessToken}`);
     } catch (err) {
         console.error("Error logging in:", err);
         res.status(400).json({ error: "Authentication failed" });
@@ -81,14 +82,14 @@ app.post("/refresh", async (req, res) => {
 
 // Fetch playlists from Spotify API
 app.get('/playlists', async (req, res) => {;    
-    if (!accessToken) {
+    if (!req.session.accessToken) {
         return res.status(401).json({ error: 'Missing access token' });
     }
 
     try {
         const response = await fetch('https://api.spotify.com/v1/me/playlists', {
             headers: {
-                Authorization: `Bearer ${accessToken}`,
+                Authorization: `Bearer ${req.session.accessToken}`,
             },
         });
 
@@ -114,7 +115,7 @@ app.post('/api/play-track', async (req, res) => {
             { uris: [trackUri] },
             {
                 headers: {
-                    'Authorization': `Bearer ${accessToken}`,
+                    'Authorization': `Bearer ${req.session.accessToken}`,
                     'Content-Type': 'application/json',
                 },
             }
@@ -138,7 +139,7 @@ app.post('/api/add-to-queue', async (req, res) => {
         const response = await fetch('https://api.spotify.com/v1/me/player/queue?uri=' + encodeURIComponent(trackUri), {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${accessToken}`,
+                'Authorization': `Bearer ${req.session.accessToken}`,
                 'Content-Type': 'application/json',
             },
         });
@@ -164,7 +165,7 @@ app.get('/api/get-random-song', async (req, res) => {
     try {
         const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
             headers: {
-                Authorization: `Bearer ${accessToken}`,
+                Authorization: `Bearer ${req.session.accessToken}`,
             },
         });
 

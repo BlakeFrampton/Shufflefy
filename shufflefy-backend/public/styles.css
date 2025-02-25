@@ -3,26 +3,26 @@ body {
   color: #ffffff;
 }
 .player-container {
-    width: 300px; /* Set a fixed width for the player */
-    max-height: 450px; /* Limit the height of the player */
-    display: flex; /* Use flexbox for the player layout */
-    flex-direction: column; /* Stack elements vertically */
-    justify-content: space-between; /* Space between elements */
-    align-items: center; /* Stretch items to fill the width */
-    margin-left: auto; /* Center in the remaining space */
-    margin-right: auto; /* Space from the right */
-    background-color: #282828; /* Optional: background color for the player */
-    border-radius: 8px; /* Optional: rounded corners */
-    padding: 20px; /* Optional: padding inside the player */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Optional: shadow for the player */
-    position: relative; /* Ensure position is relative for better control */
-    top: 50%; /* Center vertically */
-    transform: translateY(-50%); /* Adjust to center */
+    width: 300px;
+    max-height: 450px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #282828;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
     border: 1px solid #ddd;
     border-radius: 12px;
     overflow: flex;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    display: none; /* Start hidden */
+    display: none;
     transition: background-color 0.3s ease;
   }
   .album-art {
