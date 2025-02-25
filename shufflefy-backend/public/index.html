@@ -41,9 +41,10 @@
 
     function checkAuth() {
         const accessToken = new URLSearchParams(window.location.search).get('accessToken');
-
+        console.log("Check auth accessToken: ", accessToken);
         //If user is not logged in, redirect to login
         if (!accessToken) {
+            console.log("calling Login");
             window.location.href = rootUri + "/login";
         } else {
             fetchPlaylists();
