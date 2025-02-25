@@ -97,9 +97,8 @@
 
             player.addListener('player_state_changed', async state =>  {
                 if (state) {
-                    updateUI(state);
-
                     if (currentTrackUri != state.track_window.current_track.uri){
+                        updateUI(state);
                         currentTrackUri = state.track_window.current_track.uri
                         const newTrackUri = await getRandomSong(playlistId);
                         addToQueue(newTrackUri);
