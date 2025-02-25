@@ -98,11 +98,9 @@
             player.connect();
 
             player.addListener('player_state_changed', async state =>  {
-                // Get state using async function to avoid error where first state is null
-                let playerState = await player.getCurrentState();
-                if (playerState) {
-                    if (currentTrackUri != playerState.track_window.current_track.uri){
-                        updateUI(playerState);
+                if (state) {
+                    if (currentTrackUri != state.track_window.current_track.uri){
+                        updateUI(state);
                         currentTrackUri = state.track_window.current_track.uri
                         const newTrackUri = await getRandomSong(playlistId);
                         addToQueue(newTrackUri);
@@ -260,6 +258,7 @@
         playlistId = playlist_id;
         currentTrackUri = await getRandomSong(playlistId);
         await playTrack(currentTrackUri);
+        updateUI(player.GetCurrentState()); //State change occurs before state is fully setup, so call manually
         addToQueue(await getRandomSong(playlistId));
         addToQueue(await getRandomSong(playlistId));
         addToQueue(await getRandomSong(playlistId));
