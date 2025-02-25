@@ -45,6 +45,7 @@ app.get("/callback", async (req, res) => {
     const { code } = req.query; // Get the authorization code from the query params
     console.log("Authorization Code:", code);
 
+    if (code){
     try {
         const data = await spotifyApi.authorizationCodeGrant(code); // Exchange the code for tokens
         accessToken = data.body.access_token; // Access token
@@ -58,6 +59,9 @@ app.get("/callback", async (req, res) => {
     } catch (err) {
         console.error("Error logging in:", err);
         res.status(400).json({ error: "Authentication failed" });
+    }
+    } else{
+        console.log("No auth code");
     }
 });
 
