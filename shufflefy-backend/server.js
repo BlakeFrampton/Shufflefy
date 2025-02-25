@@ -13,7 +13,7 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     //Secure means requires HTTPS, SET TRUE FOR DEPLOY
-    cookie: { secure: true, httpOnly: true, sameSite: "Lax" }
+    cookie: { secure: false, httpOnly: true, sameSite: "Lax" }
 }));
 
 app.use(cors());
@@ -82,6 +82,7 @@ app.post("/refresh", async (req, res) => {
 
 // Fetch playlists from Spotify API
 app.get('/playlists', async (req, res) => {
+    console.log(req.session.accessToken)
     if (!req.session.accessToken) {
         return res.status(401).json({ error: 'Missing access token' });
     }
