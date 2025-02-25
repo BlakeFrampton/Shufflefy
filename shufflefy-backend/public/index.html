@@ -258,9 +258,9 @@
         playlistId = playlist_id;
         currentTrackUri = await getRandomSong(playlistId);
         await playTrack(currentTrackUri);
-        waitForTrack(player).then((track) => {
+        waitForTrack(player).then(async (track) => {
             console.log("Track is now available:", track);
-            updateUI(player.getCurrentState());
+            updateUI(await player.getCurrentState());
         });
         addToQueue(await getRandomSong(playlistId));
         addToQueue(await getRandomSong(playlistId));
