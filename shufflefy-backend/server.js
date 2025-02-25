@@ -81,7 +81,7 @@ app.post("/refresh", async (req, res) => {
 });
 
 // Fetch playlists from Spotify API
-app.get('/playlists', async (req, res) => {;    
+app.get('/playlists', async (req, res) => {
     if (!req.session.accessToken) {
         return res.status(401).json({ error: 'Missing access token' });
     }
