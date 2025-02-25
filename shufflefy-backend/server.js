@@ -21,6 +21,8 @@ app.use(express.static(path.join(__dirname, "public")));
 const PORT = process.env.PORT || 5000;
 console.log(PORT);
 
+let accessToken = null;
+
 // Spotify API setup
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
@@ -45,14 +47,11 @@ app.get("/callback", async (req, res) => {
 
     try {
         const data = await spotifyApi.authorizationCodeGrant(code); // Exchange the code for tokens
-        const accessToken = data.body.access_token; // Access token
+        accessToken = data.body.access_token; // Access token
         const refreshToken = data.body.refresh_token; // Refresh token
         const expiresIn = data.body.expires_in; // Token expiration time
         
         console.log("Access Token: ", accessToken);
-        console.log("Scopes received: ", accessToken.scope)
-        // store accessToken in session
-        req.session.accessToken = accessToken;
         
         //Store accessToken in frontend
         res.redirect(process.env.SPOTIFY_CLIENT_ID + `/?accessToken=${accessToken}`);
@@ -77,9 +76,7 @@ app.post("/refresh", async (req, res) => {
 });
 
 // Fetch playlists from Spotify API
-app.get('/playlists', async (req, res) => {
-    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN;
-
+app.get('/playlists', async (req, res) => {;    
     if (!accessToken) {
         return res.status(401).json({ error: 'Missing access token' });
     }
@@ -113,7 +110,7 @@ app.post('/api/play-track', async (req, res) => {
             { uris: [trackUri] },
             {
                 headers: {
-                    'Authorization': `Bearer ${process.env.SPOTIFY_ACCESS_TOKEN}`,
+                    'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                 },
             }
@@ -127,8 +124,7 @@ app.post('/api/play-track', async (req, res) => {
 });
 
 app.post('/api/add-to-queue', async (req, res) => {
-    const { trackUri } = req.body;
-    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN;
+    const { trackUri } = req.body;;
 
     if (!trackUri) {
         return res.status(400).json({ error: 'Track URI is required' });
@@ -156,7 +152,6 @@ app.post('/api/add-to-queue', async (req, res) => {
 
 app.get('/api/get-random-song', async (req, res) => {
     const { playlistId } = req.query;
-    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN; // Securely stored in environment variables
 
     if (!playlistId) {
         return res.status(400).json({ error: 'Playlist ID is required' });
