@@ -95,6 +95,14 @@
                 console.error(message);
             });
 
+            player.connect();
+            
+            const initialState = await player.getCurrentState();
+            if (initialState) {
+                updateUI(initialState);
+                currentTrackUri = initialState.track_window.current_track.uri;
+            }
+
             player.addListener('player_state_changed', async state =>  {
                 if (state) {
                     if (currentTrackUri != state.track_window.current_track.uri){
@@ -106,7 +114,6 @@
                 }
             });
 
-            player.connect();
         }
     }
 
