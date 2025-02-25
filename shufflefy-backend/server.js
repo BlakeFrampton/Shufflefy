@@ -76,6 +76,34 @@ app.post("/refresh", async (req, res) => {
     }
 });
 
+// Fetch playlists from Spotify API
+app.get('/playlists', async (req, res) => {
+    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN;
+
+    if (!accessToken) {
+        return res.status(401).json({ error: 'Missing access token' });
+    }
+
+    try {
+        const response = await fetch('https://api.spotify.com/v1/me/playlists', {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: `Spotify API error: ${response.statusText}` });
+        }
+
+        const data = await response.json();
+        res.json(data.items); // Send playlists to frontend
+    } catch (error) {
+        console.error("Error fetching playlists:", error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
 app.post('/api/play-track', async (req, res) => {
     const { trackUri , deviceId} = req.body;
 
@@ -100,7 +128,7 @@ app.post('/api/play-track', async (req, res) => {
 
 app.post('/api/add-to-queue', async (req, res) => {
     const { trackUri } = req.body;
-    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN; // Get the token securely
+    const accessToken = process.env.SPOTIFY_ACCESS_TOKEN;
 
     if (!trackUri) {
         return res.status(400).json({ error: 'Track URI is required' });
