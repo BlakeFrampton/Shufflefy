@@ -14,8 +14,8 @@
     <script src="https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js"></script>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
-    <div id="container">
-        <div id="playlists"></div>
+    <div class="container" id="container">
+        <div class="playlists" id="playlists"></div>
         <div class="player-container" id="playerContainer">
             <img class="album-art" id="albumArt" alt="Album Art">
             <div class="track-info">
@@ -34,8 +34,8 @@
     </div>
             
     <script>
-    let rootUri = "https://shufflefy.live"
-    // let rootUri = "http://localhost:5000"
+    // let rootUri = "https://shufflefy.live"
+    let rootUri = "http://localhost:5000"
 
     function checkAuth() {
         const accessToken = new URLSearchParams(window.location.search).get('accessToken');
