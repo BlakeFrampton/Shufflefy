@@ -34,8 +34,8 @@
     </div>
             
     <script>
-    // let rootUri = "https://shufflefy.live"
-    let rootUri = "http://localhost:5000"
+    let rootUri = "https://shufflefy.live"
+    // let rootUri = "http://localhost:5000"
 
     function checkAuth() {
         const accessToken = new URLSearchParams(window.location.search).get('accessToken');
@@ -219,38 +219,38 @@
 
     function displayPlaylists(playlists) {
     const playlistsContainer = document.getElementById('playlists');
-    playlistsContainer.innerHTML = ''; // Clear previous content
+    playlistsContainer.innerHTML = '';
 
     playlists.forEach((playlist) => {
         // Create a container for each playlist
         const playlistDiv = document.createElement('div');
-        playlistDiv.classList.add('playlist-item'); // Add a class for styling
+        playlistDiv.classList.add('playlist-item');
         playlistDiv.style.cursor = 'pointer';
         playlistDiv.onclick = () => playlistChosen(playlist.id);
 
-        // Create an image element for the playlist cover
+        // Create image element for playlist cover
         const img = document.createElement('img');
-        img.src = playlist.images[0].url; // Use the first image as the cover
+        img.src = playlist.images[0].url;
         img.alt = `${playlist.name} cover`;
-        img.classList.add('playlist-image'); // Add a class for styling
+        img.classList.add('playlist-image');
 
-        // Create a title element for the playlist name
         const title = document.createElement('h3');
         title.textContent = playlist.name;
-        title.classList.add('playlist-title'); // Add a class for styling
+        title.classList.add('playlist-title');
 
-        // Append the image and title to the playlistDiv
         playlistDiv.appendChild(img);
         playlistDiv.appendChild(title);
 
-        // Append the playlistDiv to the container
         playlistsContainer.appendChild(playlistDiv);
     });
 }
 
     async function playlistChosen(playlist_id){
-
         playlistId = playlist_id;
+        const userId = await getUserID();
+        const userPlaylistId = await getUserPlaylistId(userId, playlistId);
+        await addSongsToDB(userPlaylistId, playlistId);
+
         currentTrackUri = await getRandomSong(playlistId);
         await playTrack(currentTrackUri);
         waitForTrack(player).then(async (track) => {
@@ -262,6 +262,72 @@
         addToQueue(await getRandomSong(playlistId));
     }
 
+    async function getUserID(){
+        try{
+        const response = await fetch(rootUri + "/api/getUserId", {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+                });
+
+        if (!response.ok) {
+            throw new Error(`Error fetching userId: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const userId = data.userId;
+
+        return userId;
+    } catch (error){
+        console.error("Error: ", error);
+        return null;
+    }
+    }
+
+    async function getUserPlaylistId(userId, playlistId){
+        try{
+            const response = await fetch(rootUri + "/db/getUserPlaylistId", {
+                method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify({userId, playlistId})
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error fetching userPlaylistId: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const userPlaylistId = data.userPlaylistId;
+            return userPlaylistId;
+        } catch (error) {
+            console.error("Error: ", error);
+            return null;
+        }
+
+    }
+
+    async function addSongsToDB(){
+        try{
+            const response = await fetch(rootUri + "/db/addSongs", {
+                method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify({userId, playlistId})
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error fetching userPlaylistId: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error: ", error);
+            return null;
+        }
+    }
+
     function waitForTrack(player) {
     return new Promise((resolve) => {
         const checkTrack = async () => {
@@ -269,10 +335,10 @@
             if (state && state.track_window.current_track) {
                 resolve(state.track_window.current_track);
             } else {
-                setTimeout(checkTrack, 100); // Check again after 100ms
+                setTimeout(checkTrack, 100);
             }
         };
-        checkTrack(); // Start checking
+        checkTrack();
     });
 }
 

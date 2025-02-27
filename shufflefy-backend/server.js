@@ -4,6 +4,7 @@ const axios = require("axios");
 const SpotifyWebApi = require("spotify-web-api-node");
 const session = require("express-session");
 const path = require("path");
+const pool = require('./db'); 
 
 require('dotenv').config();
 
@@ -21,7 +22,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 5000;
-console.log("Port:", PORT);
 
 // Spotify API setup
 const spotifyApi = new SpotifyWebApi({
@@ -35,7 +35,6 @@ app.get("/login", (req, res) => {
     console.log("login");
     const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=streaming user-read-email playlist-read-private user-read-private user-modify-playback-state&show_dialog=true`;
     
-    console.log("Authorization URL:", authUrl);
     res.redirect(authUrl); // Redirect the user to the Spotify authorization page
 
 });
@@ -43,7 +42,6 @@ app.get("/login", (req, res) => {
 // Step 2: Get Spotify Auth Token
 app.get("/callback", async (req, res) => {
     const { code } = req.query; // Get the authorization code from the query params
-    console.log("Authorization Code:", code);
 
     if (code){
     try {
@@ -53,10 +51,6 @@ app.get("/callback", async (req, res) => {
         const expiresIn = data.body.expires_in; // Token expiration time
         const grantedScopes = data.body.scope; 
         
-        console.log("Access Token: ", req.session.accessToken);
-        console.log("Granted scopes: ", grantedScopes);
-        
-
         //Store accessToken in frontend
         res.redirect(process.env.ROOT_URI + `/?accessToken=${req.session.accessToken}`);
     } catch (err) {
@@ -64,7 +58,7 @@ app.get("/callback", async (req, res) => {
         res.status(400).json({ error: "Authentication failed" });
     }
     } else{
-        console.log("No auth code");
+        console.error("No auth code");
     }
 });
 
@@ -85,7 +79,6 @@ app.post("/refresh", async (req, res) => {
 
 // Fetch playlists from Spotify API
 app.get('/playlists', async (req, res) => {
-    console.log("session access token:", req.session.accessToken)
     if (!req.session.accessToken) {
         return res.status(401).json({ error: 'Missing access token' });
     }
@@ -186,11 +179,109 @@ app.get('/api/get-random-song', async (req, res) => {
         const randomTrack = data.items[Math.floor(Math.random() * data.items.length)];
         const trackUri = randomTrack.track.uri;
 
-        res.json({ trackUri });
+        res.json({ trackUri: trackUri });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
+});
+
+app.get("/api/getUserId", async (req, res) => {
+    console.error("Get userId");
+    try {
+        const response = await fetch("https://api.spotify.com/v1/me", {
+            headers: {
+                Authorization: `Bearer ${req.session.accessToken}`
+            }
+        })
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: 'Failed to fetch userId' });
+        }
+
+        const data = await response.json();
+        if (!data.id){
+            return res.status(404).json({error: "No userId found"});
+        }
+        const userId = data.id;
+        res.json({userId: userId});
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+})
+
+app.post("/db/getUserPlaylistId", async (req,res) => {
+    const {userId, playlistId} = req.body;
+
+    try {
+        const insertResult =  await pool.query(
+            `INSERT INTO UserPlaylist (UserID, PlaylistID)
+             VALUES ($1, $2)
+             ON CONFLICT (UserID, PlaylistID) DO NOTHING;`,
+            [userId, playlistId]
+        );
+        console.log("Insert results: ", insertResult);
+    } catch (error) {
+        console.error('Error inserting UserPlaylist:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+
+    try {
+        const queryText = `
+            SELECT UserPlaylistID
+            FROM UserPlaylist
+            WHERE UserID = $1 AND PlaylistID = $2;
+        `;
+        const result = await pool.query(queryText, [userId, playlistId]);
+        if (result.rows.length > 0) {
+            res.json({userPlaylistId: result.rows[0].userplaylistid});
+        } else {
+            res.status(400).json({error: 'No userPlaylistId found'})
+        }
+
+        
+    } catch (error) {
+        console.error('Error fetching UserPlaylistId:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+
+});
+
+app.post("/db/addSongs", async (req,res) => {
+    const {userId, playlistId} = req.body;
+
+    try {
+        const insertResult =  await pool.query(
+            `INSERT INTO UserPlaylist (UserID, PlaylistID)
+             VALUES ($1, $2)
+             ON CONFLICT (UserID, PlaylistID) DO NOTHING;`,
+            [userId, playlistId]
+        );
+        console.log("Insert results: ", insertResult);
+    } catch (error) {
+        console.error('Error inserting UserPlaylist:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+
+    try {
+        const queryText = `
+            SELECT UserPlaylistID
+            FROM UserPlaylist
+            WHERE UserID = $1 AND PlaylistID = $2;
+        `;
+        const result = await pool.query(queryText, [userId, playlistId]);
+        if (result.rows.length > 0) {
+            res.json({userPlaylistId: result.rows[0].userplaylistid});
+        } else {
+            res.status(400).json({error: 'No userPlaylistId found'})
+        }
+
+        
+    } catch (error) {
+        console.error('Error fetching UserPlaylistId:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+
 });
 
 app.get('*', (req, res) => {
