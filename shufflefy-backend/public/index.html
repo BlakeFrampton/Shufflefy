@@ -34,8 +34,8 @@
     </div>
             
     <script>
-    let rootUri = "https://shufflefy.live"
-    // let rootUri = "http://localhost:5000"
+    // let rootUri = "https://shufflefy.live"
+    let rootUri = "http://localhost:5000"
 
     function checkAuth() {
         const accessToken = new URLSearchParams(window.location.search).get('accessToken');
@@ -57,6 +57,8 @@
     let deviceId = null;
     let playlistId = null;
     let currentTrackUri = null;
+    let firstTrackUri = null; //This needs to be stored to be filtered out of queue, bug in spotify api
+    let queuing = false; //Avoid multiple simultaneous queues
 
     window.onSpotifyWebPlaybackSDKReady = async () => {
         const accessToken = new URLSearchParams(window.location.search).get('accessToken');
@@ -100,13 +102,19 @@
                 if (state) {
                     if (currentTrackUri != state.track_window.current_track.uri){
                         updateUI(state);
-                        currentTrackUri = state.track_window.current_track.uri
-                        const newTrackUri = await getRandomSong(playlistId);
-                        addToQueue(newTrackUri);
+                        currentTrackUri = state.track_window.current_track.uri;
+                        const userId = await getUserID();
+                        const userPlaylistId = await getUserPlaylistId(userId, playlistId);
+                        await updateWeights(userPlaylistId, currentTrackUri); //Apply weight changes once the song plays to avoid resetting weight of song in queue that never gets played
                     }
+                    const queue = await getQueue();
+                    console.log("queue: ", queue);
+                    if (queue.length == 0 && queuing == false){
+                        await queueNewSong();
+                    }
+                    
                 }
             });
-
         }
     }
 
@@ -202,8 +210,9 @@
         }
     };
 
-    function nextTrack(){
-        if (playerReady){
+    async function nextTrack(){
+        const queue = await getQueue();
+        if (playerReady & queue.length > 0){
             player.nextTrack();
         }
     }
@@ -249,19 +258,33 @@
         playlistId = playlist_id;
         const userId = await getUserID();
         const userPlaylistId = await getUserPlaylistId(userId, playlistId);
-        await addSongsToDB(userPlaylistId, playlistId);
-
-        currentTrackUri = await getRandomSong(playlistId);
+        const trackUris = await getSongs(playlistId);
+        await addSongsToDB(userPlaylistId, trackUris);
+        
+        const songWeights = await getSongWeights(userPlaylistId, trackUris);
+        const currentTrackUri = await chooseRandomSong(songWeights);
+        firstTrackUri = currentTrackUri;
         await playTrack(currentTrackUri);
+        await updateWeights(userPlaylistId, currentTrackUri);
+
         waitForTrack(player).then(async (track) => {
             console.log("Track is now available:", track);
             updateUI(await player.getCurrentState());
         });
-        addToQueue(await getRandomSong(playlistId));
-        addToQueue(await getRandomSong(playlistId));
-        addToQueue(await getRandomSong(playlistId));
+
+        await queueNewSong();
     }
 
+    async function queueNewSong(){
+        queuing = true;
+        const userId = await getUserID();
+        const userPlaylistId = await getUserPlaylistId(userId, playlistId);
+        const trackUris = await getSongs(playlistId);
+        const songWeights = await getSongWeights(userPlaylistId, trackUris);
+        const newTrackUri = await chooseRandomSong(songWeights);
+        await addToQueue(newTrackUri);
+        queuing = false;
+    }
     async function getUserID(){
         try{
         const response = await fetch(rootUri + "/api/getUserId", {
@@ -309,18 +332,19 @@
 
     }
 
-    async function addSongsToDB(){
+    async function addSongsToDB(userPlaylistId, trackUris){
+        console.log("track uris: ", trackUris);
         try{
-            const response = await fetch(rootUri + "/db/addSongs", {
+            const response = await fetch(rootUri + "/db/add-songs", {
                 method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                body: JSON.stringify({userId, playlistId})
+                body: JSON.stringify({userPlaylistId, trackUris})
             });
 
             if (!response.ok) {
-                throw new Error(`Error fetching userPlaylistId: ${response.statusText}`);
+                throw new Error(`Error adding songs: ${response.statusText}`);
             }
         } catch (error) {
             console.error("Error: ", error);
@@ -358,16 +382,35 @@
     }
 }
 
+    async function getSongs(playlistId) {
+        try {
+            const response = await fetch(rootUri + `/api/get-songs`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playlistId })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error fetching random song: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return data.trackUris;
+        } catch (error) {
+            console.error('Error:', error);
+            return null;
+        }
+    }
+
 
     async function playTrack(trackUri) {
+        console.log("trackUri: ", trackUri);
         if (playerReady){
             const response = await fetch(rootUri + `/api/play-track`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ trackUri, deviceId })
             });
-
-            const data = await response.json();
 
             if (response.ok) {
                 console.log('Playback started successfully');
@@ -396,6 +439,95 @@
             console.log(`Track added to queue: ${trackUri}`);
         } catch (error) {
             console.error('Error:', error);
+        }
+    }
+
+    async function chooseRandomSong(songs){
+        let totalWeight = 0;
+        const cumulativeWeights = [];
+
+        for (const song of songs) {
+            totalWeight += song.weight;
+            cumulativeWeights.push({ id: song.songid, cumulative: totalWeight });
+        }
+
+        const randomValue = Math.random() * totalWeight;
+    
+        // Binary search to find song
+        let left = 0, right = cumulativeWeights.length - 1;
+        while (left < right) {
+            let mid = Math.floor((left + right) / 2);
+            if (cumulativeWeights[mid].cumulative < randomValue) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+
+        return cumulativeWeights[left].id;
+    }
+
+    async function getSongWeights(userPlaylistId, songs){
+        try{
+            const response = await fetch(rootUri + "/db/get-song-weights", {
+                method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify({userPlaylistId, songs})
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error getting song weights: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return data.songWeights;
+
+        } catch (error) {
+            console.error("Error: ", error);
+            return null;
+        }
+    }
+
+    async function updateWeights(userPlaylistId, trackUri){
+        try{
+            const response = await fetch(rootUri + "/db/update-weights", {
+                method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify({userPlaylistId, trackUri})
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error getting song weights: ${response.statusText}`);
+            }
+
+        } catch (error) {
+            console.error("Error: ", error);
+            return null;
+        }
+    }
+
+    async function getQueue(){
+        try{
+            const response = await fetch(rootUri + "/api/get-queue", {
+                method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify({firstTrackUri})
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error getting queue: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return data.queue;
+
+        } catch (error) {
+            console.error("Error: ", error);
+            return null;
         }
     }
 
