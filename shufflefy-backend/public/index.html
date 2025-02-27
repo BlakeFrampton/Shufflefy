@@ -34,8 +34,8 @@
     </div>
             
     <script>
-    let rootUri = "https://shufflefy.live"
-    // let rootUri = "http://localhost:5000"
+    // let rootUri = "https://shufflefy.live"
+    let rootUri = "http://localhost:5000"
 
     function checkAuth() {
         const accessToken = new URLSearchParams(window.location.search).get('accessToken');
@@ -208,15 +208,10 @@
         }
     }
 
-    // Assuming you already have the access token stored in accessToken variable
     const accessToken = new URLSearchParams(window.location.search).get('accessToken');
 
     async function fetchPlaylists() {
-        const response = await fetch(rootUri + '/playlists', {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
+        const response = await fetch(rootUri + '/playlists');
 
         const data = await response.json();
         displayPlaylists(data);
@@ -254,6 +249,7 @@
 }
 
     async function playlistChosen(playlist_id){
+
         playlistId = playlist_id;
         currentTrackUri = await getRandomSong(playlistId);
         await playTrack(currentTrackUri);
