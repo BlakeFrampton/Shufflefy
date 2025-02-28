@@ -256,15 +256,19 @@
 
     async function playlistChosen(playlist_id){
         playlistId = playlist_id;
+
+        //Get a song playing as soon as possible, then do rest of computation
+        //The first song is true random out of first 100 songs in playlist for maximum speed
+        //Weights are adjusted based on first song later in function
+        const currentTrackUri = await getTrueRandomSong(playlistId);
+        firstTrackUri = currentTrackUri;
+        await playTrack(currentTrackUri);
+
         const userId = await getUserID();
         const userPlaylistId = await getUserPlaylistId(userId, playlistId);
         const trackUris = await getSongs(playlistId);
         await addSongsToDB(userPlaylistId, trackUris);
         
-        const songWeights = await getSongWeights(userPlaylistId, trackUris);
-        const currentTrackUri = await chooseRandomSong(songWeights);
-        firstTrackUri = currentTrackUri;
-        await playTrack(currentTrackUri);
         await updateWeights(userPlaylistId, currentTrackUri);
 
         waitForTrack(player).then(async (track) => {
@@ -281,7 +285,7 @@
         const userPlaylistId = await getUserPlaylistId(userId, playlistId);
         const trackUris = await getSongs(playlistId);
         const songWeights = await getSongWeights(userPlaylistId, trackUris);
-        const newTrackUri = await chooseRandomSong(songWeights);
+        const newTrackUri = await getRandomSong(songWeights);
         await addToQueue(newTrackUri);
         queuing = false;
     }
@@ -366,21 +370,21 @@
     });
 }
 
-    async function getRandomSong(playlistId) {
-    try {
-        const response = await fetch(rootUri + `/api/get-random-song?playlistId=${playlistId}`);
+    async function getTrueRandomSong(playlistId){
+        try {
+            const response = await fetch(rootUri + `/api/get-random-song?playlistId=${playlistId}`);
 
-        if (!response.ok) {
-            throw new Error(`Error fetching random song: ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`Error fetching random song: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            return data.trackUri;
+        } catch (error) {
+            console.error('Error:', error);
+            return null;
         }
-
-        const data = await response.json();
-        return data.trackUri;
-    } catch (error) {
-        console.error('Error:', error);
-        return null;
     }
-}
 
     async function getSongs(playlistId) {
         try {
@@ -442,7 +446,7 @@
         }
     }
 
-    async function chooseRandomSong(songs){
+    async function getRandomSong(songs){
         let totalWeight = 0;
         const cumulativeWeights = [];
 

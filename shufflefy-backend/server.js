@@ -276,6 +276,31 @@ app.post("/api/get-queue", async (req, res) => {
     }
 });
 
+app.get('/api/get-random-song', async (req, res) => {
+    const { playlistId } = req.query;
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+            headers: {
+                Authorization: `Bearer ${req.session.accessToken}`,
+            },
+        });
+        if (!response.ok) {
+            return res.status(response.status).json({ error: 'Failed to fetch playlist tracks' });
+        }
+        const data = await response.json();
+        if (!data.items || data.items.length === 0) {
+            return res.status(404).json({ error: 'No tracks found in the playlist' });
+        }
+        const randomTrack = data.items[Math.floor(Math.random() * data.items.length)];
+        const trackUri = randomTrack.track.uri;
+        res.json({ trackUri: trackUri });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+
+});
+
 app.post("/db/getUserPlaylistId", async (req,res) => {
     const {userId, playlistId} = req.body;
 
