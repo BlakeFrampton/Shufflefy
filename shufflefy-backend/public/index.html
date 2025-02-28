@@ -24,7 +24,7 @@
             </div>
             <div class="controls">
               <button onclick="previousTrack()">&#9664;&#9664;</button>
-              <button onclick="togglePlayPause()">&#9654;</button>
+              <button class="togglePlayPause" onclick="togglePlayPause()">&#x23f8;</button>
               <button onclick="nextTrack()">&#9654;&#9654;</button>
             </div>
             <div class="progress-container" id="progressContainer">
@@ -39,14 +39,11 @@
 
     function checkAuth() {
         const accessToken = new URLSearchParams(window.location.search).get('accessToken');
-        console.log("Check auth accessToken: ", accessToken);
         //If user is not logged in, redirect to login
         if (!accessToken) {
-            console.log("calling Login");
             window.location.href = rootUri + "/login";
         } else {
             fetchPlaylists();
-            console.log("access token: ", accessToken);
         }
     }
 
@@ -79,7 +76,7 @@
 
             // Not Ready
             player.addListener('not_ready', ({ device_id }) => {
-                console.log('Device ID has gone offline', device_id);
+                console.error('Device ID has gone offline', device_id);
                 playerReady = false;
                 stopProgressUpdates();
             });
@@ -108,7 +105,6 @@
                         await updateWeights(userPlaylistId, currentTrackUri); //Apply weight changes once the song plays to avoid resetting weight of song in queue that never gets played
                     }
                     const queue = await getQueue();
-                    console.log("queue: ", queue);
                     if (queue.length == 0 && queuing == false){
                         await queueNewSong();
                     }
@@ -144,7 +140,7 @@
             playerContainer.style.backgroundColor = darkenedColor; // Update player background color
         });
 
-        // Update progress bar (example calculation)
+        // Update progress bar
         let progress = (state.position / state.duration) * 100;
         document.getElementById('progressBar').style.width = progress + '%';
     }
@@ -159,6 +155,7 @@
             let duration = state.duration;
             const newTime = clickPercent * duration;
             player.seek(newTime);
+            // updateProgress();
         });
     });
 
@@ -167,7 +164,7 @@
     function updateProgress() {
         if (player) {
             player.getCurrentState().then(state => {
-                if (state && !state.paused) {
+                if (state) {
                     let progress = (state.position / state.duration) * 100;
                     document.getElementById('progressBar').style.width = progress + '%'; // Update the progress bar
                 }
@@ -202,6 +199,15 @@
         if (playerReady){
             player.togglePlay();
         }
+        player.getCurrentState().then(state => {
+            const button = document.querySelector(".togglePlayPause");
+
+            if (state.paused){
+                button.innerHTML = '&#x23f8';
+            } else{
+                button.innerHTML = '&#9654;';
+            }
+        })
     };
 
     function previousTrack(){
@@ -272,7 +278,6 @@
         await updateWeights(userPlaylistId, currentTrackUri);
 
         waitForTrack(player).then(async (track) => {
-            console.log("Track is now available:", track);
             updateUI(await player.getCurrentState());
         });
 
@@ -337,7 +342,6 @@
     }
 
     async function addSongsToDB(userPlaylistId, trackUris){
-        console.log("track uris: ", trackUris);
         try{
             const response = await fetch(rootUri + "/db/add-songs", {
                 method: 'POST',
@@ -408,7 +412,6 @@
 
 
     async function playTrack(trackUri) {
-        console.log("trackUri: ", trackUri);
         if (playerReady){
             const response = await fetch(rootUri + `/api/play-track`, {
                 method: 'POST',
@@ -440,7 +443,6 @@
                 throw new Error(`Error adding to queue: ${response.statusText}`);
             }
 
-            console.log(`Track added to queue: ${trackUri}`);
         } catch (error) {
             console.error('Error:', error);
         }

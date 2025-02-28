@@ -2,13 +2,15 @@ const pool = require('./db');
 
 const runSQL = async () => {
   const query = `
-    ALTER TABLE songweight
-    ADD CONSTRAINT unique_playist_song UNIQUE (SongID, UserPlaylistID);
+    SELECT *
+    FROM songweight
+    WHERE songid='spotify:track:4JfpJrrGNXRj2yXm1fYV23';
 
   `;
 
   try {
-    await pool.query(query);
+    const data = await pool.query(query);
+    console.table(data.rows);
     console.log('Query completed successfully ');
   } catch (err) {
     console.error('Query failed', err);
