@@ -14,7 +14,7 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     //Secure means requires HTTPS, SET TRUE FOR DEPLOY
-    cookie: { secure: false, httpOnly: true, sameSite: "Lax" }
+    cookie: { secure: false, sameSite: "Lax" }
 }));
 
 app.use(cors());
@@ -51,8 +51,8 @@ app.get("/callback", async (req, res) => {
         const expiresIn = data.body.expires_in; // Token expiration time
         const grantedScopes = data.body.scope; 
         
-        //Store accessToken in frontend
-        res.redirect(process.env.ROOT_URI + `/?accessToken=${req.session.accessToken}`);
+        //redirect to main site
+        res.redirect(process.env.ROOT_URI);
     } catch (err) {
         console.error("Error logging in:", err);
         res.status(400).json({ error: "Authentication failed" });
@@ -62,6 +62,13 @@ app.get("/callback", async (req, res) => {
     }
 });
 
+app.get('/access-token', (req, res) => {
+    console.log(req.session.accessToken)
+    if (!req.session.accessToken) {
+        return res.status(401).json({ error: 'No access token' });
+    }
+    res.json({ accessToken: req.session.accessToken });
+});
 
 // Step 2: Refresh Access Token
 app.post("/refresh", async (req, res) => {
@@ -242,8 +249,6 @@ app.get("/api/getUserId", async (req, res) => {
 
 app.post("/api/get-queue", async (req, res) => {
     const {firstTrackUri} = req.body;
-    console.log("firstTrackUri: ", firstTrackUri);
-    console.log("auth token: ", req.session.accessToken);
     try {
         const response = await fetch("https://api.spotify.com/v1/me/player/queue", {
             method: 'GET',
@@ -259,14 +264,11 @@ app.post("/api/get-queue", async (req, res) => {
         const data = await response.json();
 
         const queue = data.queue;
-        const currentlyPlaying = data.currently_playing;
 
         if (queue && queue.length > 1) {
             const cleanedQueue = queue.filter((track) => {
-                console.log("trackID: ", track.id);
                 return track.uri !== firstTrackUri //Filter out spotify api bug of duping current song into queue
             });
-            // console.log("cleaned queue: ", cleanedQueue);
             res.json({ queue: cleanedQueue });
         } else {
             res.json({ queue: null });

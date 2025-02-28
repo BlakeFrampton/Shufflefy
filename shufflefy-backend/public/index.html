@@ -34,11 +34,11 @@
     </div>
             
     <script>
-    let rootUri = "https://shufflefy.live"
-    // let rootUri = "http://localhost:5000"
+    // let rootUri = "https://shufflefy.live"
+    let rootUri = "http://localhost:5000"
 
-    function checkAuth() {
-        const accessToken = new URLSearchParams(window.location.search).get('accessToken');
+    async function checkAuth() {
+        const accessToken = await getAccessToken();
         //If user is not logged in, redirect to login
         if (!accessToken) {
             window.location.href = rootUri + "/login";
@@ -58,7 +58,7 @@
     let queuing = false; //Avoid multiple simultaneous queues
 
     window.onSpotifyWebPlaybackSDKReady = async () => {
-        const accessToken = new URLSearchParams(window.location.search).get('accessToken');
+        const accessToken = await getAccessToken();
         if (accessToken){
             player = new Spotify.Player({
                 name: 'Shufflefy',
@@ -108,7 +108,7 @@
                     if (queue.length == 0 && queuing == false){
                         await queueNewSong();
                     }
-                    
+                    updatePlayPauseButton();
                 }
             });
         }
@@ -199,16 +199,19 @@
         if (playerReady){
             player.togglePlay();
         }
+        updatePlayPauseButton();
+    };
+
+    function updatePlayPauseButton(){
         player.getCurrentState().then(state => {
             const button = document.querySelector(".togglePlayPause");
-
             if (state.paused){
-                button.innerHTML = '&#x23f8';
-            } else{
                 button.innerHTML = '&#9654;';
+            } else{
+                button.innerHTML = '&#x23f8;';
             }
         })
-    };
+    }
 
     function previousTrack(){
         if (playerReady){
@@ -222,8 +225,6 @@
             player.nextTrack();
         }
     }
-
-    const accessToken = new URLSearchParams(window.location.search).get('accessToken');
 
     async function fetchPlaylists() {
         const response = await fetch(rootUri + '/playlists');
@@ -293,6 +294,29 @@
         const newTrackUri = await getRandomSong(songWeights);
         await addToQueue(newTrackUri);
         queuing = false;
+    }
+
+    async function getAccessToken(){
+        try{
+        const response = await fetch(rootUri + "/access-token", {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+                });
+
+        if (!response.ok) {
+            throw new Error(`Error fetching access token: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const accessToken = data.accessToken;
+
+        return accessToken;
+    } catch (error){
+        console.error("Error: ", error);
+        return null;
+    }
     }
     async function getUserID(){
         try{
