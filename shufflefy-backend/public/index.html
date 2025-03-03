@@ -55,7 +55,7 @@
     let playlistId = null;
     let currentTrackUri = null;
     let firstTrackUri = null; //This needs to be stored to be filtered out of queue, bug in spotify api
-    let queuing = false; //Avoid multiple simultaneous queues
+    let queuing = false; //Avoid adding multiple songs to queue simultaneously
 
     window.onSpotifyWebPlaybackSDKReady = async () => {
         const accessToken = await getAccessToken();
@@ -79,7 +79,19 @@
                 console.error('Device ID has gone offline', device_id);
                 playerReady = false;
                 stopProgressUpdates();
+
+                setTimeout(() => {
+                    player.connect().then(success => {
+                        if (success) {
+                            console.log('Reconnected successfully');
+                        } else {
+                            console.log('Reconnection attempt failed');
+                        }
+                    });
+                }, 5000);
             });
+
+            
 
             player.addListener('initialization_error', ({ message }) => {
                 console.error(message);
@@ -113,6 +125,18 @@
             });
         }
     }
+
+    setInterval(async () => {
+        const state = await player.getCurrentState();
+        if (!state) {
+            console.log('Player state is null, attempting reconnection...');
+            player.connect().then(success => {
+                if (success) {
+                    console.log('Reconnected via polling');
+                }
+            });
+        }
+    }, 10000);
 
     function darkenColor(color, factor) {
         const hex = color.slice(1);
