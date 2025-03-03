@@ -128,7 +128,7 @@
     }
 
     async function updateMediaMetadata() {
-        const state = await getCurrentState();
+        const state = await player.getCurrentState();
         if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: state.track_window.current_track.name,
