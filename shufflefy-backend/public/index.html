@@ -111,14 +111,14 @@
                 if (state) {
                     if (currentTrackUri != state.track_window.current_track.uri){
                         updateUI(state);
-                        currentTrackUri = state.track_window.current_track.uri;
                         updateMediaMetadata(state.track_window.current_track);
+                        currentTrackUri = state.track_window.current_track.uri;
                         const userId = await getUserID();
                         const userPlaylistId = await getUserPlaylistId(userId, playlistId);
                         await updateWeights(userPlaylistId, currentTrackUri); //Apply weight changes once the song plays to avoid resetting weight of song in queue that never gets played
                     }
                     const queue = await getQueue();
-                    if (queue.length == 0 && queuing == false){
+                    if (!queue || queue.length == 0 && queuing == false){
                         await queueNewSong();
                     }
                     updatePlayPauseButton();
@@ -129,6 +129,11 @@
 
     function updateMediaMetadata(track) {
         if ('mediaSession' in navigator) {
+            if (state.paused){
+                navigator.mediaSession.playbackState = 'paused';
+            } else {
+                navigator.mediaSession.playbackState = 'playing';
+            }
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: track.name,
                 artist: track.artists.map(artist => artist.name).join(", "),
@@ -325,6 +330,8 @@
 
         waitForTrack(player).then(async (track) => {
             updateUI(await player.getCurrentState());
+            const state = await player.getCurrentState();
+            updateMediaMetadata(state.track_window.current_track);
         });
 
         await queueNewSong();

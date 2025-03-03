@@ -32,7 +32,6 @@ const spotifyApi = new SpotifyWebApi({
 
 // Step 1: Get authorisation code
 app.get("/login", (req, res) => {
-    console.log("login");
     const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-playback-state user-read-currently-playing streaming user-read-email playlist-read-private user-read-private user-modify-playback-state&show_dialog=false`;
     
     res.redirect(authUrl); // Redirect the user to the Spotify authorization page
@@ -63,7 +62,6 @@ app.get("/callback", async (req, res) => {
 });
 
 app.get('/access-token', (req, res) => {
-    console.log(req.session.accessToken)
     if (!req.session.accessToken) {
         return res.status(401).json({ error: 'No access token' });
     }
@@ -111,7 +109,6 @@ app.get('/playlists', async (req, res) => {
 
 
 app.post('/api/play-track', async (req, res) => {
-    console.log("play track");
     const { trackUri , deviceId} = req.body;
 
     try {
@@ -370,8 +367,6 @@ app.post("/db/add-songs", async (req,res) => {
 
 app.post("/db/update-weights", async (req, res) => {
     const { userPlaylistId, trackUri } = req.body;
-    console.log("userPlaylistId: ", userPlaylistId);
-    console.log("track Uri: ", trackUri);
 
     try {
         const queryText = `
