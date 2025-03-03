@@ -68,10 +68,11 @@
 
                     
             // Ready
-            player.addListener('ready', ({ device_id }) => {
+            player.addListener('ready', async ({ device_id }) => {
                 deviceId = device_id;
                 playerReady = true;
-                startProgressUpdates()
+                startProgressUpdates();
+                await updateMediaMetadata();
             });
 
             // Not Ready
@@ -125,6 +126,27 @@
             });
         }
     }
+
+    async function updateMediaMetadata() {
+        const state = await getCurrentState();
+        if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: state.track_window.current_track.name,
+            artist: track.artists.map(artist => artist.name).join(", "),
+            album: state.track_window.current_track.album.name,
+            artwork: [
+                { src: state.track_window.current_track.album.images[0].url, sizes: '512x512', type: 'image/jpeg' }
+            ]
+        });
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+            nextTrack();
+        });
+
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+            previousTrack();
+        });
+    }
+}
 
     setInterval(async () => {
         const state = await player.getCurrentState();
@@ -344,7 +366,7 @@
     }
     async function getUserID(){
         try{
-        const response = await fetch(rootUri + "/api/getUserId", {
+        const response = await fetch(rootUri + "/api/get-user-id", {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
