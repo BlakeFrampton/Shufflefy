@@ -72,7 +72,6 @@
                 deviceId = device_id;
                 playerReady = true;
                 startProgressUpdates();
-                await updateMediaMetadata();
             });
 
             // Not Ready
@@ -113,6 +112,7 @@
                     if (currentTrackUri != state.track_window.current_track.uri){
                         updateUI(state);
                         currentTrackUri = state.track_window.current_track.uri;
+                        updateMediaMetadata(state.track_window.current_track);
                         const userId = await getUserID();
                         const userPlaylistId = await getUserPlaylistId(userId, playlistId);
                         await updateWeights(userPlaylistId, currentTrackUri); //Apply weight changes once the song plays to avoid resetting weight of song in queue that never gets played
@@ -127,26 +127,25 @@
         }
     }
 
-    async function updateMediaMetadata() {
-        const state = await player.getCurrentState();
+    function updateMediaMetadata(track) {
         if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: state.track_window.current_track.name,
-            artist: track.artists.map(artist => artist.name).join(", "),
-            album: state.track_window.current_track.album.name,
-            artwork: [
-                { src: state.track_window.current_track.album.images[0].url, sizes: '512x512', type: 'image/jpeg' }
-            ]
-        });
-        navigator.mediaSession.setActionHandler('nexttrack', () => {
-            nextTrack();
-        });
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: track.name,
+                artist: track.artists.map(artist => artist.name).join(", "),
+                album: track.album.name,
+                artwork: [
+                    { src: track.album.images[0].url, sizes: '512x512', type: 'image/jpeg' }
+                ]
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                nextTrack();
+            });
 
-        navigator.mediaSession.setActionHandler('previoustrack', () => {
-            previousTrack();
-        });
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                previousTrack();
+            });
+        }
     }
-}
 
     setInterval(async () => {
         const state = await player.getCurrentState();
