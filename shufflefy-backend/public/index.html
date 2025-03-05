@@ -34,8 +34,8 @@
     </div>
             
     <script>
-    let rootUri = "https://shufflefy.live"
-    // let rootUri = "http://localhost:5000"
+    // let rootUri = "https://shufflefy.live"
+    let rootUri = "http://localhost:5000"
 
     async function checkAuth() {
         const accessToken = await getAccessToken();
@@ -111,7 +111,8 @@
                 if (state) {
                     if (currentTrackUri != state.track_window.current_track.uri){
                         updateUI(state);
-                        updateMediaMetadata(state.track_window.current_track);
+                        updateMediaMetadata(state);
+
                         currentTrackUri = state.track_window.current_track.uri;
                         const userId = await getUserID();
                         const userPlaylistId = await getUserPlaylistId(userId, playlistId);
@@ -127,7 +128,7 @@
         }
     }
 
-    function updateMediaMetadata(track) {
+    function updateMediaMetadata(state) {
         if ('mediaSession' in navigator) {
             if (state.paused){
                 navigator.mediaSession.playbackState = 'paused';
@@ -135,11 +136,11 @@
                 navigator.mediaSession.playbackState = 'playing';
             }
             navigator.mediaSession.metadata = new MediaMetadata({
-                title: track.name,
-                artist: track.artists.map(artist => artist.name).join(", "),
-                album: track.album.name,
+                title: state.track_window.current_track.name,
+                artist: state.track_window.current_track.artists.map(artist => artist.name).join(", "),
+                album: state.track_window.current_track.album.name,
                 artwork: [
-                    { src: track.album.images[0].url, sizes: '512x512', type: 'image/jpeg' }
+                    { src: state.track_window.current_track.album.images[0].url, sizes: '512x512', type: 'image/jpeg' }
                 ]
             });
             navigator.mediaSession.setActionHandler('nexttrack', () => {
@@ -331,7 +332,10 @@
         waitForTrack(player).then(async (track) => {
             updateUI(await player.getCurrentState());
             const state = await player.getCurrentState();
-            updateMediaMetadata(state.track_window.current_track);
+            player.getCurrentState().then(state => {
+                updateMediaMetadata(state);
+            })
+
         });
 
         await queueNewSong();
