@@ -35,7 +35,7 @@
             
     <script>
     let rootUri = window.location.origin;
-    // let rootUri = "http://localhost:5000"
+    let tokenExpirationTime = 0;
 
     async function checkAuth() {
         const accessToken = await getAccessToken();
@@ -47,11 +47,40 @@
         }
     }
 
+    window.onload = checkAuth();
+
+    setInterval(async () => {
+        const tokenExpiration = await getTokenExpiration();
+        console.log("seconds left on token: ", (tokenExpiration - Date.now())/1000);
+        if (Date.now() >= tokenExpiration - 60000) { // Refresh 1 min before expiry
+            try {
+                const data = await refreshToken();
+                req.session.accessToken = data.body.access_token;
+                req.session.tokenExpiresAt = Date.now() + data.body.expires_in * 1000;
+                console.log("Access token refreshed");
+            } catch (error) {
+                console.error("Failed to refresh access token:", error);
+            }
+        }
+    }, 5000); // Check every 30 seconds
+
+    async function refreshToken() {
+        try {
+            const response = await fetch('/refresh', { method: 'POST' });
+
+            if (!response.ok) throw new Error("Failed to refresh token");
+
+            const data = await response.json();
+            localStorage.setItem("access_token", data.accessToken);
+        } catch (error) {
+            console.error("Error refreshing token:", error);
+        }
+    }
+
     window.onSpotifyWebPlaybackSDKReady = async () =>{
         await createNewPlayer();
     }
 
-    window.onload = checkAuth;
 
     let player = null;
     let playerReady = false;
@@ -114,6 +143,7 @@
             player.connect();
 
             player.addListener('player_state_changed', async state =>  {
+                await checkAuth();
                 if (state && playerReady) {
                     if (currentTrackUri != state.track_window.current_track.uri){
                         updateUI(state);
@@ -402,6 +432,53 @@
         return null;
     }
     }
+
+    async function getRefreshToken(){
+        try{
+            const response = await fetch(rootUri + "/refresh-token", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                    });
+
+            if (!response.ok) {
+                throw new Error(`Error fetching refresh token: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const refreshToken = data.refreshToken;
+
+            return refreshToken;
+        } catch (error){
+            console.error("Error: ", error);
+            return null;
+        }
+    }
+
+    async function getTokenExpiration(){
+        try{
+            const response = await fetch(rootUri + "/token-expires-at", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                    });
+
+            if (!response.ok) {
+                throw new Error(`Error fetching token expiration: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const tokenExpiresAt = data.tokenExpiresAt;
+            console.log(data);
+            return tokenExpiresAt;
+        } catch (error){
+            console.error("Error: ", error);
+            return null;
+        }
+    }
+
     async function getUserID(){
         try{
         const response = await fetch(rootUri + "/api/get-user-id", {

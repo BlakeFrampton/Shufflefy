@@ -45,8 +45,8 @@ app.get("/callback", async (req, res) => {
     try {
         const data = await spotifyApi.authorizationCodeGrant(code); // Exchange the code for tokens
         req.session.accessToken = data.body.access_token; // Access token
-        const refreshToken = data.body.refresh_token; // Refresh token
-        const expiresIn = data.body.expires_in; // Token expiration time
+        req.session.refreshToken = data.body.refresh_token; // Refresh token
+        req.session.tokenExpiresAt = Date.now() + data.body.expires_in * 1000;
         const grantedScopes = data.body.scope; 
         
         //redirect to main site
@@ -67,13 +67,28 @@ app.get('/access-token', (req, res) => {
     res.json({ accessToken: req.session.accessToken });
 });
 
+app.get('/refresh-token', (req, res) => {
+    if (!req.session.refreshToken) {
+        return res.status(401).json({ error: 'No refresh token' });
+    }
+    res.json({ refreshToken: req.session.refreshToken });
+});
+
+app.get('/token-expires-at', (req, res) => {
+    if (!req.session.tokenExpiresAt) {
+        return res.status(401).json({ error: 'No token expiration' });
+    }
+    res.json({ tokenExpiresAt: req.session.tokenExpiresAt });
+});
+
 // Step 2: Refresh Access Token
 app.post("/refresh", async (req, res) => {
-    const { refreshToken } = req.body;
-    spotifyApi.setRefreshToken(refreshToken);
+    spotifyApi.setRefreshToken(req.session.refreshToken);
     try {
         const data = await spotifyApi.refreshAccessToken();
-        res.json({ accessToken: data.body.access_token, expiresIn: data.body.expires_in });
+        req.session.accessToken = data.body.access_token;
+        req.session.refreshToken = data.body.refresh_token;
+        req.session.tokenExpiresAt = Date.now() + data.body.expires_in * 1000;
     } catch (err) {
         console.error("Error refreshing token:", err);
         res.status(400).json({ error: "Could not refresh token" });
