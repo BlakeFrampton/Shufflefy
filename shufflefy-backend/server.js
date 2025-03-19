@@ -13,7 +13,6 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'default_secret', // Use an environment variable or default secret
     resave: false,
     saveUninitialized: true,
-    //Secure means requires HTTPS, SET TRUE FOR DEPLOY
     cookie: { secure: false, sameSite: "Lax" }
 }));
 

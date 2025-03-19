@@ -34,7 +34,7 @@
     </div>
             
     <script>
-    let rootUri = "https://shufflefy.live"
+    let rootUri = window.location.origin;
     // let rootUri = "http://localhost:5000"
 
     async function checkAuth() {
@@ -47,17 +47,23 @@
         }
     }
 
+    window.onSpotifyWebPlaybackSDKReady = async () =>{
+        await createNewPlayer();
+    }
+
     window.onload = checkAuth;
 
     let player = null;
     let playerReady = false;
     let deviceId = null;
     let playlistId = null;
+    let trackUris = null; //Avoid fetching playlist songs repeatedly when unnecessary
     let currentTrackUri = null;
     let firstTrackUri = null; //This needs to be stored to be filtered out of queue, bug in spotify api
     let queuing = false; //Avoid adding multiple songs to queue simultaneously
 
-    window.onSpotifyWebPlaybackSDKReady = async () => {
+    async function createNewPlayer(){
+        playerReady = false;
         const accessToken = await getAccessToken();
         if (accessToken){
             player = new Spotify.Player({
@@ -108,7 +114,7 @@
             player.connect();
 
             player.addListener('player_state_changed', async state =>  {
-                if (state) {
+                if (state && playerReady) {
                     if (currentTrackUri != state.track_window.current_track.uri){
                         updateUI(state);
                         updateMediaMetadata(state);
@@ -119,13 +125,19 @@
                         await updateWeights(userPlaylistId, currentTrackUri); //Apply weight changes once the song plays to avoid resetting weight of song in queue that never gets played
                     }
                     const queue = await getQueue();
-                    if (!queue || queue.length == 0 && queuing == false){
+                    if (trackUris != null && (!queue || queue.length < 5 && queuing == false)){
                         await queueNewSong();
                     }
-                    updatePlayPauseButton();
+                    if (playerReady){
+                        await updatePlayPauseButton();
+                    }
                 }
             });
         }
+        while (!playerReady){
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return;
     }
 
     function updateMediaMetadata(state) {
@@ -246,22 +258,21 @@
       }
     }
 
-    function togglePlayPause(){
+    async function togglePlayPause(){
         if (playerReady){
             player.togglePlay();
         }
-        updatePlayPauseButton();
+        await updatePlayPauseButton();
     };
 
-    function updatePlayPauseButton(){
-        player.getCurrentState().then(state => {
-            const button = document.querySelector(".togglePlayPause");
-            if (state.paused){
-                button.innerHTML = '&#9654;';
-            } else{
-                button.innerHTML = '&#x23f8;';
-            }
-        })
+    async function updatePlayPauseButton(){
+        const state = await player.getCurrentState();
+        const button = document.querySelector(".togglePlayPause");
+        if (state.paused){
+            button.innerHTML = '&#9654;';
+        } else{
+            button.innerHTML = '&#x23f8;';
+        }
     }
 
     function previousTrack(){
@@ -313,7 +324,11 @@
 }
 
     async function playlistChosen(playlist_id){
+        playerReady = false;
+        await createNewPlayer(); //No way to clear queue in spotify API, create a new player instead
+        trackUris = null;
         playlistId = playlist_id;
+
 
         //Get a song playing as soon as possible, then do rest of computation
         //The first song is true random out of first 100 songs in playlist for maximum speed
@@ -324,7 +339,7 @@
 
         const userId = await getUserID();
         const userPlaylistId = await getUserPlaylistId(userId, playlistId);
-        const trackUris = await getSongs(playlistId);
+        trackUris = await getSongs(playlistId);
         await addSongsToDB(userPlaylistId, trackUris);
         
         await updateWeights(userPlaylistId, currentTrackUri);
@@ -345,9 +360,22 @@
         queuing = true;
         const userId = await getUserID();
         const userPlaylistId = await getUserPlaylistId(userId, playlistId);
-        const trackUris = await getSongs(playlistId);
         const songWeights = await getSongWeights(userPlaylistId, trackUris);
-        const newTrackUri = await getRandomSong(songWeights);
+        var newTrackUri = await getRandomSong(songWeights);
+
+        var uniqueSong = false;
+        while (!uniqueSong){
+            newTrackUri = await getRandomSong(songWeights);
+
+            uniqueSong = true;
+            const queue = await getQueue();
+            for (song of queue){
+                if (song.uri == newTrackUri){
+                    uniqueSong = false;
+                }
+            }
+        }
+
         await addToQueue(newTrackUri);
         queuing = false;
     }
@@ -499,9 +527,7 @@
                 body: JSON.stringify({ trackUri, deviceId })
             });
 
-            if (response.ok) {
-                console.log('Playback started successfully');
-            } else {
+            if (!response.ok) {
                 console.error('Failed to start playback:', response.statusText);
             }
         } else {
@@ -548,8 +574,7 @@
             } else {
                 right = mid;
             }
-        }
-
+        }   
         return cumulativeWeights[left].id;
     }
 
