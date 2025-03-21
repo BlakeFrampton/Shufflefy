@@ -5,7 +5,8 @@ const createTables = async () => {
     CREATE TABLE IF NOT EXISTS UserPlaylist (
         UserPlaylistID SERIAL PRIMARY KEY,
         UserID TEXT NOT NULL,
-        PlaylistID TEXT NOT NULL
+        PlaylistID TEXT NOT NULL,
+        CONSTRAINT UNIQUE (UserID, PlaylistID)
     );
 
     CREATE TABLE IF NOT EXISTS SongWeight (
