@@ -87,23 +87,45 @@ app.get('/playlists', async (req, res) => {
         return res.status(401).json({ error: 'Missing access token' });
     }
 
+    playlists = [];
+    endOfPlaylists = false;
+    offset = 0;
+
+    //API gets only 50 playlists at a time, so iterate until there is no link to next page
     try {
-        const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
-            headers: {
-                Authorization: `Bearer ${req.session.accessToken}`,
-            },
-        });
+        while (!endOfPlaylists){
+            const response = await fetch(`https://api.spotify.com/v1/me/playlists?limit=50&offset=${offset}`, {
+                headers: {
+                    Authorization: `Bearer ${req.session.accessToken}`,
+                },
+            });
 
-        if (!response.ok) {
-            return res.status(response.status).json({ error: `Spotify API error: ${response.statusText}` });
-        }
+            if (!response.ok) {
+                return res.status(response.status).json({ error: 'Failed to fetch playlists' });
+            }
 
-        const data = await response.json();
-        res.json(data.items); // Send playlists to frontend
+            const data = await response.json();
+
+            if (!data.items || data.items.length === 0) {
+                return res.status(404).json({ error: 'No playlists found' });
+            }
+            const items = data.items;
+            for (const item of items){
+                playlists.push(item);
+            }
+            if (data.next == null){
+                endOfPlaylists = true;
+            }
+            offset += 50;
+            console.log("Playlists: ", playlists);
+        } 
+
     } catch (error) {
         console.error("Error fetching playlists:", error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+
+    res.json({playlists});
 });
 
 

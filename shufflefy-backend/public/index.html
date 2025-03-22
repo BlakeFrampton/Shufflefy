@@ -35,6 +35,7 @@
             
     <script>
     let rootUri = window.location.origin;
+    console.log(rootUri);
     // let rootUri = "http://localhost:5000"
 
     async function checkAuth() {
@@ -292,7 +293,7 @@
         const response = await fetch(rootUri + '/playlists');
 
         const data = await response.json();
-        displayPlaylists(data);
+        displayPlaylists(data.playlists);
     }
 
     function displayPlaylists(playlists) {
