@@ -369,7 +369,7 @@ app.post("/db/add-songs", async (req,res) => {
     songsToAdd = trackUris.length;
     offset = 0;
 
-    while (trackUris.length > offset + 900){
+    while (trackUris.length > offset){
         tracks = trackUris.slice(offset, offset + 900); //Max of 1000 inserts in one statement 
         offset += 900;
 
