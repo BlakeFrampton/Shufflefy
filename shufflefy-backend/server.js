@@ -223,11 +223,10 @@ app.post('/api/get-songs', async (req, res) => {
             }
             const items = data.items;
             for (const item of items){
-                if (item.track.uri){
-                trackUris.push(item.track.uri);
-                } else{
-                    console.log(item);
-                }
+                try{
+                    trackUris.push(item.track.uri);
+                }catch{ };
+
             }
             if (data.next == null){
                 endOfPlaylist = true;
@@ -367,26 +366,40 @@ app.post("/db/add-songs", async (req,res) => {
         return res.status(400).json({ error: 'No songs provided' });
     }
 
-    const values = [];
-    const placeholders = trackUris.map((songId, index) => {
-        const weight = Math.floor(trackUris.length / 2); // Set the weight of new songs to half the size of the playlist
-        values.push(songId, userPlaylistId, weight);
-        return `($${index * 3 + 1}, $${index * 3 + 2}, $${index * 3 + 3})`; //Each record has parameters ($1, $2, $3), index adjusted
-    }).join(", ");
-    
-    const queryText = `
+    songsToAdd = trackUris.length;
+    offset = 0;
+
+    while (trackUris.length > offset + 900){
+        tracks = trackUris.slice(offset, offset + 900); //Max of 1000 inserts in one statement 
+        offset += 900;
+
+        const values = [];
+        const placeholders = tracks.map((songId, index) => {
+            const weight = Math.floor(trackUris.length / 2); // Set the weight of new songs to half the size of the playlist
+            values.push(songId, userPlaylistId, weight);
+            return `($${index * 3 + 1}, $${index * 3 + 2}, $${index * 3 + 3})`; //Each record has parameters ($1, $2, $3), index adjusted
+        }).join(", ");
+
+        const queryText = `
         INSERT INTO songweight (SongId, UserPlaylistId, weight)
         VALUES ${placeholders}
         ON CONFLICT (SongID, UserPlaylistID) DO NOTHING;
-    `;
-    try {
-        await pool.query(queryText, values);
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Error inserting songs into playlist:', error);
-        res.status(500).json({ error: 'Database error' });
+        `;
+
+        try {
+            await pool.query(queryText, values);
+
+        } catch (error) {
+            console.error('Error inserting songs into playlist:', error);
+            res.status(500).json({ error: 'Database error' });
+        }
     }
 
+    res.json({ success: true });
+    
+    
+    
+    
 });
 
 app.post("/db/update-weights", async (req, res) => {
