@@ -223,8 +223,11 @@ app.post('/api/get-songs', async (req, res) => {
             }
             const items = data.items;
             for (const item of items){
-                console.log(item.track.uri);
+                if (item.track.uri){
                 trackUris.push(item.track.uri);
+                } else{
+                    console.log(item);
+                }
             }
             if (data.next == null){
                 endOfPlaylist = true;
