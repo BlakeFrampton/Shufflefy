@@ -35,7 +35,6 @@
             
     <script>
     let rootUri = window.location.origin;
-    console.log(rootUri);
     // let rootUri = "http://localhost:5000"
 
     async function checkAuth() {
@@ -370,9 +369,11 @@
 
             uniqueSong = true;
             const queue = await getQueue();
-            for (song of queue){
-                if (song.uri == newTrackUri){
-                    uniqueSong = false;
+            if (queue){
+                for (song of queue){
+                    if (song.uri == newTrackUri){
+                        uniqueSong = false;
+                    }
                 }
             }
         }

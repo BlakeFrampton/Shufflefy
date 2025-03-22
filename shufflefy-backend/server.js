@@ -117,7 +117,6 @@ app.get('/playlists', async (req, res) => {
                 endOfPlaylists = true;
             }
             offset += 50;
-            console.log("Playlists: ", playlists);
         } 
 
     } catch (error) {
@@ -224,6 +223,7 @@ app.post('/api/get-songs', async (req, res) => {
             }
             const items = data.items;
             for (const item of items){
+                console.log(item.track.uri);
                 trackUris.push(item.track.uri);
             }
             if (data.next == null){
