@@ -66,9 +66,15 @@ app.get("/callback", async (req, res) => {
 
 app.get('/access-token', (req, res) => {
     if (!req.session.accessToken) {
-        return res.status(401).json({ error: 'No access token' });
+        console.log("redirecting to auth");
+        const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-email user-read-private user-read-playback-state user-read-currently-playing streaming playlist-read-private user-modify-playback-state&show_dialog=false`;
+
+        res.redirect(authUrl);
+        // return res.status(401).json({ error: 'No access token' });
+    } else{
+         res.json({ accessToken: req.session.accessToken });
     }
-    res.json({ accessToken: req.session.accessToken });
+   
 });
 
 // Step 2: Refresh Access Token
