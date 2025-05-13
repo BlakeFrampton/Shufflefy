@@ -16,7 +16,11 @@ app.use(session({
     cookie: { secure: true, sameSite: "Lax" }
 }));
 
-app.use(cors());
+app.use(cors({
+    // origin: 'https://shufflefy.live',
+    origin: 'http://localhost:5000/',
+    credentials: 'true'
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -66,11 +70,7 @@ app.get("/callback", async (req, res) => {
 
 app.get('/access-token', (req, res) => {
     if (!req.session.accessToken) {
-        console.log("redirecting to auth");
-        const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-email user-read-private user-read-playback-state user-read-currently-playing streaming playlist-read-private user-modify-playback-state&show_dialog=false`;
-
-        res.redirect(authUrl);
-        // return res.status(401).json({ error: 'No access token' });
+        return res.status(401).json({ error: 'No access token' });
     } else{
          res.json({ accessToken: req.session.accessToken });
     }

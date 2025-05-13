@@ -47,13 +47,14 @@
             
     <script>
     let rootUri = window.location.origin;
-    // let rootUri = "http://localhost:5000"
 
     async function checkAuth() {
+        console.log("check auth;")
         const accessToken = await getAccessToken();
         //If user is not logged in, redirect to login
-        if (!accessToken) {
+        if (!accessToken || accessToken == null) {
             window.location.href = rootUri + "/login";
+            fetchPlaylists();
         } else {
             fetchPlaylists();
         }
@@ -215,7 +216,6 @@
             }
         } catch (error){
             //If this has an error, its because there is no player, because the access token is wrong
-            console.log("checking auth");
             checkAuth()
         }
     }, 10000);
@@ -432,7 +432,8 @@
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                    },
+                    credentials: 'include'
                     });
 
             if (!response.ok) {
@@ -735,7 +736,12 @@
     }
 
     // Run the check when the page loads
-    window.onload = checkSpotifyInstallation;
+
+    window.onload = function () {
+    checkAuth();
+    checkSpotifyInstallation();
+
+};
 
 
 
