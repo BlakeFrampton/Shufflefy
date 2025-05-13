@@ -11,6 +11,14 @@
 <body>
     <h1>Shufflefy</h1>
     
+    
+    <a href="#" id="spotifyButton" class="spotify-button">
+        <img src="spotify-logo.svg" alt="Spotify Logo" id="spotify-logo">
+        <span id="spotifyButtonText">GET SPOTIFY FREE</span>
+    </a>
+
+
+
     <script src="https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js"></script>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
@@ -21,6 +29,7 @@
             <div class="track-info">
               <div class="track-title" id="trackTitle">Track Title</div>
               <div class="artist-name" id="artistName">Artist Name</div>
+              <div class="album-name" id="albumName">Album Name</div>
             </div>
             <div class="controls">
               <button onclick="previousTrack()">&#9664;&#9664;</button>
@@ -32,6 +41,9 @@
             </div>
         </div>
     </div>
+
+    <a href="/privacy-policy" class="privacy-button">Privacy Policy</a>
+
             
     <script>
     let rootUri = window.location.origin;
@@ -166,14 +178,20 @@
     }
 
     setInterval(async () => {
-        const state = await player.getCurrentState();
-        if (!state) {
-            console.log('Player state is null, attempting reconnection...');
-            player.connect().then(success => {
-                if (success) {
-                    console.log('Reconnected via polling');
-                }
-            });
+        try {
+            const state = await player.getCurrentState();
+            if (!state) {
+                console.log('Player state is null, attempting reconnection...');
+                player.connect().then(success => {
+                    if (success) {
+                        console.log('Reconnected via polling');
+                    }
+                });
+            }
+        } catch (error){
+            //If this has an error, its because there is no player, because the access token is wrong
+            console.log("checking auth");
+            checkAuth()
         }
     }, 10000);
 
@@ -195,6 +213,7 @@
         const currentTrack = state.track_window.current_track;
         document.getElementById('trackTitle').textContent = currentTrack.name;
         document.getElementById('artistName').textContent = currentTrack.artists.map(artist => artist.name).join(', ');
+        document.getElementById('albumName').textContent = currentTrack.album.name;
         albumArt.src = currentTrack.album.images[0].url;
 
         Vibrant.from(albumArt.src).getPalette().then((palette) => {
@@ -384,26 +403,27 @@
 
     async function getAccessToken(){
         try{
-        const response = await fetch(rootUri + "/access-token", {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-                });
+            const response = await fetch(rootUri + "/access-token", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                    });
 
-        if (!response.ok) {
-            throw new Error(`Error fetching access token: ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`Error fetching access token: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const accessToken = data.accessToken;
+
+            return accessToken;
+        } catch (error){
+            console.error("Error: ", error);
+            return null;
         }
-
-        const data = await response.json();
-        const accessToken = data.accessToken;
-
-        return accessToken;
-    } catch (error){
-        console.error("Error: ", error);
-        return null;
     }
-    }
+
     async function getUserID(){
         try{
         const response = await fetch(rootUri + "/api/get-user-id", {
@@ -645,6 +665,50 @@
     }
 
     fetchPlaylists();
+
+    // Function to check if Spotify is installed
+    function checkSpotifyInstallation() {
+    const spotifyButton = document.getElementById('spotifyButton');
+    const spotifyButtonText = document.getElementById('spotifyButtonText');
+
+    // Set default link and text
+    spotifyButton.href = 'spotify://';  // Link to Spotify download page
+    spotifyButtonText.textContent = 'OPEN SPOTIFY';       // Default button text
+    
+    // Add a click event listener to check if Spotify is installed
+    spotifyButton.addEventListener('click', function(event) {
+        event.preventDefault();  // Prevent the default action so we can check before proceeding
+
+        // Attempt to open Spotify's app URI (will only work if Spotify is installed)
+        const start = new Date().getTime();
+        window.location.href = 'spotify://';
+        
+        // Wait a bit to see if the app opens
+        setTimeout(() => {
+        const end = new Date().getTime();
+
+        // If time elapsed is short, Spotify was likely opened
+        if (end - start < 1000) {
+            // Spotify is installed, change the link and text
+            spotifyButton.href = 'spotify://';  // Open Spotify directly
+            spotifyButtonText.textContent = 'OPEN SPOTIFY'; // Change button text
+        } else {
+            // Spotify is not installed, ensure the download link is active
+            spotifyButton.href = 'https://www.spotify.com/download';
+            spotifyButtonText.textContent = 'GET SPOTIFY FREE';
+        }
+        
+        // Now open the link to Spotify (either app or web download page)
+        window.location.href = spotifyButton.href;
+        }, 800);
+    });
+    }
+
+    // Run the check when the page loads
+    window.onload = checkSpotifyInstallation;
+
+
+
     </script>
 </body>
 

@@ -1,5 +1,5 @@
 html, body {
-  overflow-y: scroll; 
+  overflow-y: hidden; 
   overflow-x: hidden;
   width: 100%;
 }
@@ -35,6 +35,7 @@ body {
   .album-art {
     width: 100%;
     height: auto;
+    border-radius: 10px;
   }
   .track-info {
     padding: 10px;
@@ -45,6 +46,10 @@ body {
     color: #ffffff;
   }
   .artist-name {
+    font-size: 14px;
+    color: #b8b8b8;
+  }
+  .album-name {
     font-size: 14px;
     color: #b8b8b8;
   }
@@ -171,4 +176,47 @@ body {
     width: 80%; /* Ensures playlist items take full available width */
     text-align: center; /* Ensures text is centered inside */
   }
+}
+
+.spotify-button {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 10%;       /* Adjust size as needed */
+  height: auto;
+  z-index: 1000;     /* Ensure it’s on top of other elements */
+  padding: 10px;
+
+  text-decoration: none;
+  color: white;
+  background-color: #1DB954; /* Spotify green */
+  padding: 10px 20px;
+  border-radius: 25px;
+  display: inline-block;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  text-align: center;
+}
+.spotify-button:hover {
+  background-color: #1ed760;
+}
+
+.privacy-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #1DB954; /* Spotify green */
+  color: white;
+  padding: 10px 15px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: background-color 0.2s;
+  z-index: 9999;
+}
+
+.privacy-button:hover {
+  background-color: #1ed760;
 }

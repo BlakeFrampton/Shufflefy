@@ -22,6 +22,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 5000;
 
+app.get('/privacy-policy', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'privacy-policy.html'));
+});
+
 // Spotify API setup
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
@@ -31,7 +35,7 @@ const spotifyApi = new SpotifyWebApi({
 
 // Step 1: Get authorisation code
 app.get("/login", (req, res) => {
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-playback-state user-read-currently-playing streaming user-read-email playlist-read-private user-read-private user-modify-playback-state&show_dialog=false`;
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-email user-read-private user-read-playback-state user-read-currently-playing streaming playlist-read-private user-modify-playback-state&show_dialog=false`;
     
     res.redirect(authUrl); // Redirect the user to the Spotify authorization page
 
@@ -45,7 +49,7 @@ app.get("/callback", async (req, res) => {
     try {
         const data = await spotifyApi.authorizationCodeGrant(code); // Exchange the code for tokens
         req.session.accessToken = data.body.access_token; // Access token
-        const refreshToken = data.body.refresh_token; // Refresh token
+        req.session.refreshToken = data.body.refresh_token; // Refresh token
         const expiresIn = data.body.expires_in; // Token expiration time
         const grantedScopes = data.body.scope; 
         
@@ -69,10 +73,11 @@ app.get('/access-token', (req, res) => {
 
 // Step 2: Refresh Access Token
 app.post("/refresh", async (req, res) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.session.refreshToken;
     spotifyApi.setRefreshToken(refreshToken);
     try {
         const data = await spotifyApi.refreshAccessToken();
+        req.session.accessToken = data.body.access_token; 
         res.json({ accessToken: data.body.access_token, expiresIn: data.body.expires_in });
     } catch (err) {
         console.error("Error refreshing token:", err);
