@@ -12,7 +12,7 @@
     <h1>Shufflefy</h1>
     
     
-    <a href="#" id="spotifyButton" class="spotify-button">
+    <a href="#" target="_blank" id="spotifyButton" class="spotify-button">
         <img src="spotify-logo.svg" alt="Spotify Logo" id="spotify-logo">
         <span id="spotifyButtonText">GET SPOTIFY FREE</span>
     </a>
@@ -130,6 +130,17 @@
                     if (currentTrackUri != state.track_window.current_track.uri){
                         updateUI(state);
                         updateMediaMetadata(state);
+                        const spotifyLinkBtn = document.getElementById('spotifyButton');
+                        const spotifyLinkText = document.getElementById('spotifyButtonText');
+                        if (spotifyLinkText.textContent == 'PLAY ON SPOTIFY'){
+                            const spotifyLink = getSpotifyLink(state.track_window.current_track.uri);
+                            console.log("player got link");
+                            if (spotifyLink != null){
+                                console.log("player link not null");
+                                spotifyLinkBtn.href = spotifyLink;
+                            }
+                        }  
+
 
                         currentTrackUri = state.track_window.current_track.uri;
                         const userId = await getUserID();
@@ -176,6 +187,20 @@
             });
         }
     }
+
+    function getSpotifyLink(uri) {
+        console.log("input uri: ", uri);
+    if (!uri || typeof uri !== 'string') return null;
+
+    const parts = uri.split(':');
+    if (parts.length === 3 && parts[0] === 'spotify') {
+        const type = parts[1]; // e.g. 'track' or 'episode'
+        const id = parts[2];
+        return `spotify://${type}/${id}`;
+    }
+
+    return null;
+}
 
     setInterval(async () => {
         try {
@@ -673,7 +698,7 @@
 
     // Set default link and text
     spotifyButton.href = 'spotify://';  // Link to Spotify download page
-    spotifyButtonText.textContent = 'OPEN SPOTIFY';       // Default button text
+    spotifyButtonText.textContent = 'PLAY ON SPOTIFY';       // Default button text
     
     // Add a click event listener to check if Spotify is installed
     spotifyButton.addEventListener('click', function(event) {
@@ -690,8 +715,13 @@
         // If time elapsed is short, Spotify was likely opened
         if (end - start < 1000) {
             // Spotify is installed, change the link and text
-            spotifyButton.href = 'spotify://';  // Open Spotify directly
-            spotifyButtonText.textContent = 'OPEN SPOTIFY'; // Change button text
+            const spotifyLink = getSpotifyLink(currentTrackUri);
+            if (spotifyLink != null){
+                spotifyButton.href = spotifyLink;
+            } else {
+                spotifyButton.href = 'spotify://'; // Open Spotify directly
+            }
+            spotifyButtonText.textContent = 'PLAY ON SPOTIFY'; // Change button text
         } else {
             // Spotify is not installed, ensure the download link is active
             spotifyButton.href = 'https://www.spotify.com/download';
