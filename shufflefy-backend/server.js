@@ -13,7 +13,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'default_secret', // Use an environment variable or default secret
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false, sameSite: "Lax" }
+    cookie: { secure: true, sameSite: "Lax" }
 }));
 
 app.use(cors());
