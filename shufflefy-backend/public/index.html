@@ -49,7 +49,6 @@
     let rootUri = window.location.origin;
 
     async function checkAuth() {
-        console.log("check auth;")
         const accessToken = await getAccessToken();
         //If user is not logged in, redirect to login
         if (!accessToken || accessToken == null) {
@@ -135,9 +134,7 @@
                         const spotifyLinkText = document.getElementById('spotifyButtonText');
                         if (spotifyLinkText.textContent == 'PLAY ON SPOTIFY'){
                             const spotifyLink = getSpotifyLink(state.track_window.current_track.uri);
-                            console.log("player got link");
                             if (spotifyLink != null){
-                                console.log("player link not null");
                                 spotifyLinkBtn.href = spotifyLink;
                             }
                         }  
@@ -190,7 +187,6 @@
     }
 
     function getSpotifyLink(uri) {
-        console.log("input uri: ", uri);
     if (!uri || typeof uri !== 'string') return null;
 
     const parts = uri.split(':');
