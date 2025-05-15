@@ -3,18 +3,25 @@ const cors = require("cors");
 const axios = require("axios");
 const SpotifyWebApi = require("spotify-web-api-node");
 const session = require("express-session");
+const RedisStore = require('connect-redis')(session);
+const redis = require('redis');
 const path = require("path");
 const pool = require('./db'); 
 
 require('dotenv').config();
 
+const redisClient = redis.createClient();
+
 const app = express();
 app.use(session({
+    store: new RedisStore({ client: redisClient }),
     secret: process.env.SESSION_SECRET || 'default_secret', // Use an environment variable or default secret
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false, sameSite: "Lax" }
 }));
+
+
 
 app.use(cors({
     // origin: 'https://shufflefy.live',
