@@ -47,13 +47,21 @@
             
     <script>
     let rootUri = window.location.origin;
+    
+    const params = new URLSearchParams(window.location.search);
+    const expiresIn = parseInt(params.get("expiresIn"), 10);
+
+    if (expiresIn) {
+        window.localStorage.setItem("spotifyAccessTokenExpiresAt", Date.now() + expiresIn * 1000);
+        window.history.replaceState({}, document.title, window.location.pathname); //Remove params from url
+    }
+
 
     async function checkAuth() {
         const accessToken = await getAccessToken();
         //If user is not logged in, redirect to login
         if (!accessToken || accessToken == null) {
             window.location.href = rootUri + "/login";
-            fetchPlaylists();
         } else {
             fetchPlaylists();
         }
@@ -63,7 +71,6 @@
         await createNewPlayer();
     }
 
-    window.onload = checkAuth;
 
     let player = null;
     let playerReady = false;
@@ -142,8 +149,10 @@
 
                         currentTrackUri = state.track_window.current_track.uri;
                         const userId = await getUserID();
-                        const userPlaylistId = await getUserPlaylistId(userId, playlistId);
-                        await updateWeights(userPlaylistId, currentTrackUri); //Apply weight changes once the song plays to avoid resetting weight of song in queue that never gets played
+                        if (userId != null){
+                            const userPlaylistId = await getUserPlaylistId(userId, playlistId);
+                            await updateWeights(userPlaylistId, currentTrackUri); //Apply weight changes once the song plays to avoid resetting weight of song in queue that never gets played
+                        }
                     }
                     const queue = await getQueue();
                     if (trackUris != null && (!queue || queue.length < 5 && queuing == false)){
@@ -158,7 +167,6 @@
         while (!playerReady){
             await new Promise(resolve => setTimeout(resolve, 100));
         }
-        return;
     }
 
     function updateMediaMetadata(state) {
@@ -202,6 +210,7 @@
     setInterval(async () => {
         try {
             const state = await player.getCurrentState();
+            
             if (!state) {
                 console.log('Player state is null, attempting reconnection...');
                 player.connect().then(success => {
@@ -210,9 +219,14 @@
                     }
                 });
             }
+
         } catch (error){
             //If this has an error, its because there is no player, because the access token is wrong
             checkAuth()
+        }
+        const expiresAt = parseInt(window.localStorage.getItem("spotifyAccessTokenExpiresAt"), 10);
+        if (Date.now() >= expiresAt - 60000) { // refresh if within 1 min of expiry
+            await refreshAccessToken();
         }
     }, 10000);
 
@@ -446,6 +460,31 @@
         }
     }
 
+async function refreshAccessToken() {
+  try {
+    const response = await fetch("/refresh", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to refresh token");
+    }
+
+    const data = await response.json();
+    const { accessToken, expiresIn } = data;
+
+    window.localStorage.setItem("spotifyAccessTokenExpiresAt", Date.now() + expiresIn * 1000);
+    return accessToken;
+  } catch (err) {
+    console.error("Error refreshing Spotify token:", err);
+    checkAuth();
+  }
+}
+
     async function getUserID(){
         try{
         const response = await fetch(rootUri + "/api/get-user-id", {
@@ -464,7 +503,9 @@
 
         return userId;
     } catch (error){
+        //if error thrown, access token is expired
         console.error("Error: ", error);
+        
         return null;
     }
     }

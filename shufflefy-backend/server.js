@@ -1,3 +1,6 @@
+const express = require("express");
+const session = require("express-session");
+
 const cors = require("cors");
 const axios = require("axios");
 const SpotifyWebApi = require("spotify-web-api-node");
@@ -5,9 +8,6 @@ const path = require("path");
 const pool = require('./db'); 
 
 require('dotenv').config();
-
-const express = require("express");
-const session = require("express-session");
 
 const PgSession = require('connect-pg-simple')(session);
 
@@ -25,10 +25,9 @@ app.use(session({
 }));
 
 
-
 app.use(cors({
-    // origin: 'https://shufflefy.live',
-    origin: 'http://localhost:5000/',
+    origin: 'https://shufflefy.live',
+    // origin: 'http://localhost:5000',
     credentials: 'true'
 }));
 app.use(express.json());
@@ -64,11 +63,13 @@ app.get("/callback", async (req, res) => {
         const data = await spotifyApi.authorizationCodeGrant(code); // Exchange the code for tokens
         req.session.accessToken = data.body.access_token; // Access token
         req.session.refreshToken = data.body.refresh_token; // Refresh token
-        const expiresIn = data.body.expires_in; // Token expiration time
+        req.session.expiresIn = data.body.expires_in;
         const grantedScopes = data.body.scope; 
+
+        console.log("refresh token in /callback: ", req.session.refreshToken);
         
         //redirect to main site
-        res.redirect(process.env.ROOT_URI);
+        res.redirect(process.env.ROOT_URI + `?expiresIn=${data.body.expires_in}`);
     } catch (err) {
         console.error("Error logging in:", err);
         res.status(400).json({ error: "Authentication failed" });
@@ -76,6 +77,15 @@ app.get("/callback", async (req, res) => {
     } else{
         console.error("No auth code");
     }
+});
+
+app.get('/expires-in', (req, res) => {
+    if (!req.session.expiresIn) {
+        return res.status(401).json({ error: 'No token expiry time' });
+    } else{
+         res.json({ accessToken: req.session.expiresIn });
+    }
+   
 });
 
 app.get('/access-token', (req, res) => {
@@ -90,6 +100,7 @@ app.get('/access-token', (req, res) => {
 // Step 2: Refresh Access Token
 app.post("/refresh", async (req, res) => {
     const refreshToken = req.session.refreshToken;
+    console.log("refresh token in /refresh: ", req.session.refreshToken);
     spotifyApi.setRefreshToken(refreshToken);
     try {
         const data = await spotifyApi.refreshAccessToken();
@@ -104,7 +115,7 @@ app.post("/refresh", async (req, res) => {
 
 // Fetch playlists from Spotify API
 app.get('/playlists', async (req, res) => {
-    if (!req.session.accessToken) {
+    if (!req.session.accessToken || req.session.accessToken == null) {
         return res.status(401).json({ error: 'Missing access token' });
     }
 
