@@ -27,7 +27,7 @@ app.use(session({
 
 app.use(cors({
     origin: 'https://shufflefy.live',
-    // origin: 'http://localhost:5000',
+    //origin: 'http://localhost:5000',
     credentials: 'true'
 }));
 app.use(express.json());
@@ -48,7 +48,7 @@ const spotifyApi = new SpotifyWebApi({
 
 // Step 1: Get authorisation code
 app.get("/login", (req, res) => {
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-email user-read-private user-read-playback-state user-read-currently-playing streaming playlist-read-private user-modify-playback-state&show_dialog=false`;
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-private user-read-playback-state user-read-currently-playing streaming playlist-read-private user-modify-playback-state&show_dialog=false`;
     
     res.redirect(authUrl); // Redirect the user to the Spotify authorization page
 
