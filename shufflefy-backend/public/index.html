@@ -77,7 +77,7 @@
     let playerReady = false;
     let deviceId = null;
     let playlistId = null;
-    let trackUris = null; //Avoid fetching playlist songs repeatedly when unnecessary
+    let trackUris = null; //Avoid fetching playlist songs repeatedly when unnecessary, stores whether they have been fetched
     let currentTrackUri = null;
     let firstTrackUri = null; //This needs to be stored to be filtered out of queue, bug in spotify api
     let queuing = false; //Avoid adding multiple songs to queue simultaneously
@@ -92,15 +92,12 @@
                 volume: 0.5
             });
 
-                    
-            // Ready
             player.addListener('ready', async ({ device_id }) => {
                 deviceId = device_id;
                 playerReady = true;
                 startProgressUpdates();
             });
 
-            // Not Ready
             player.addListener('not_ready', ({ device_id }) => {
                 console.error('Device ID has gone offline', device_id);
                 playerReady = false;
@@ -273,7 +270,6 @@
             let duration = state.duration;
             const newTime = clickPercent * duration;
             player.seek(newTime);
-            // updateProgress();
         });
     });
 
@@ -353,7 +349,7 @@
             const errorMessage = document.getElementById('errorMessage');
             errorMessage.textContent = `Please ensure you have logged in with a Spotify account with Spotify Premium with at least one playlist, this is required for this website to work.
 
-If you have done so and don\'t see your playlists, try clearing cookies and reopening the site.`;
+If you have done so and don't see your playlists, try clearing cookies and reopening the site.`;
         } else {
             const errorMessage = document.getElementById('errorMessage');
             errorMessage.textContent = "";
@@ -515,9 +511,7 @@ async function refreshAccessToken() {
 
         return userId;
     } catch (error){
-        //if error thrown, access token is expired
         console.error("Error: ", error);
-        
         return null;
     }
     }
@@ -662,7 +656,7 @@ async function refreshAccessToken() {
 
         const randomValue = Math.random() * totalWeight;
     
-        // Binary search to find song
+        // Binary search to find song as each song has several tickets
         let left = 0, right = cumulativeWeights.length - 1;
         while (left < right) {
             let mid = Math.floor((left + right) / 2);
@@ -741,58 +735,56 @@ async function refreshAccessToken() {
 
     fetchPlaylists();
 
-    // Function to check if Spotify is installed
+    // Check if Spotify is installed
     function checkSpotifyInstallation() {
-    const spotifyButton = document.getElementById('spotifyButton');
-    const spotifyButtonText = document.getElementById('spotifyButtonText');
+        const spotifyButton = document.getElementById('spotifyButton');
+        const spotifyButtonText = document.getElementById('spotifyButtonText');
 
-    // Set default link and text
-    spotifyButton.href = 'spotify://';  // Link to Spotify download page
-    spotifyButtonText.textContent = 'PLAY ON SPOTIFY';       // Default button text
-    
-    // Add a click event listener to check if Spotify is installed
-    spotifyButton.addEventListener('click', function(event) {
-        event.preventDefault();  // Prevent the default action so we can check before proceeding
-
-        // Attempt to open Spotify's app URI (will only work if Spotify is installed)
-        const start = new Date().getTime();
-        window.location.href = 'spotify://';
+        // Set default link and text
+        spotifyButton.href = 'spotify://';  // Link to Spotify open
+        spotifyButtonText.textContent = 'PLAY ON SPOTIFY';
         
-        // Wait a bit to see if the app opens
-        setTimeout(() => {
-        const end = new Date().getTime();
+        // Click event listener to check if Spotify is installed
+        spotifyButton.addEventListener('click', function(event) {
+            event.preventDefault();  // Prevent default action so we can check for installation before going to download page
 
-        // If time elapsed is short, Spotify was likely opened
-        if (end - start < 1000) {
-            // Spotify is installed, change the link and text
-            const spotifyLink = getSpotifyLink(currentTrackUri);
-            if (spotifyLink != null){
-                spotifyButton.href = spotifyLink;
-            } else {
-                spotifyButton.href = 'spotify://'; // Open Spotify directly
-            }
-            spotifyButtonText.textContent = 'PLAY ON SPOTIFY'; // Change button text
-        } else {
-            // Spotify is not installed, ensure the download link is active
-            spotifyButton.href = 'https://www.spotify.com/download';
-            spotifyButtonText.textContent = 'GET SPOTIFY FREE';
-        }
-        
-        // Now open the link to Spotify (either app or web download page)
-        window.location.href = spotifyButton.href;
-        }, 800);
-    });
+            // Attempt to open Spotify's app URI (will only work if Spotify is installed)
+            const start = new Date().getTime();
+            window.location.href = 'spotify://';
+            
+            // Wait to see if the app opens
+            setTimeout(() => {
+                const end = new Date().getTime();
+
+                // If spotify is installed, OS immediately hands back control to JS
+                // If time elapsed is short, Spotify was likely opened
+                if (end - start < 1000) {
+                    // Spotify is installed, change the link and text
+                    const spotifyLink = getSpotifyLink(currentTrackUri);
+                    if (spotifyLink != null){
+                        spotifyButton.href = spotifyLink; // Set link to current track
+                    } else {
+                        spotifyButton.href = 'spotify://';
+                    }
+                    spotifyButtonText.textContent = 'PLAY ON SPOTIFY';
+                } else {
+
+                    // Spotify is not installed, OS returns control after about 1 second
+                    // If time elapsed is longer than 1000ms, set link to Spotify download
+                    spotifyButton.href = 'https://www.spotify.com/download';
+                    spotifyButtonText.textContent = 'GET SPOTIFY FREE';
+                }
+                
+                // Now open link to Spotify download or app
+                window.location.href = spotifyButton.href;
+            }, 800);
+        });
     }
 
-    // Run the check when the page loads
-
     window.onload = function () {
-    checkAuth();
-    checkSpotifyInstallation();
-
-};
-
-
+        checkAuth();
+        checkSpotifyInstallation(); // Run spotify download check when the page loads
+    };
 
     </script>
 </body>

@@ -46,7 +46,7 @@ const spotifyApi = new SpotifyWebApi({
     redirectUri: process.env.SPOTIFY_REDIRECT_URI
 });
 
-// Step 1: Get authorisation code
+// Redirect to spotify login
 app.get("/login", (req, res) => {
     const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-private user-read-playback-state user-read-currently-playing streaming playlist-read-private user-modify-playback-state&show_dialog=false`;
     
@@ -54,15 +54,15 @@ app.get("/login", (req, res) => {
 
 });
 
-// Step 2: Get Spotify Auth Token
+// Get Spotify Auth Token
 app.get("/callback", async (req, res) => {
-    const { code } = req.query; // Get the authorization code from the query params
+    const { code } = req.query; // Get auth code from the query params
 
     if (code){
     try {
         const data = await spotifyApi.authorizationCodeGrant(code); // Exchange the code for tokens
-        req.session.accessToken = data.body.access_token; // Access token
-        req.session.refreshToken = data.body.refresh_token; // Refresh token
+        req.session.accessToken = data.body.access_token;
+        req.session.refreshToken = data.body.refresh_token;
         req.session.expiresIn = data.body.expires_in;
         const grantedScopes = data.body.scope; 
 
@@ -97,7 +97,7 @@ app.get('/access-token', (req, res) => {
    
 });
 
-// Step 2: Refresh Access Token
+// Refresh Access Token
 app.post("/refresh", async (req, res) => {
     const refreshToken = req.session.refreshToken;
     console.log("refresh token in /refresh: ", req.session.refreshToken);
@@ -113,7 +113,7 @@ app.post("/refresh", async (req, res) => {
 });
 
 
-// Fetch playlists from Spotify API
+// Fetch playlists
 app.get('/playlists', async (req, res) => {
     if (!req.session.accessToken || req.session.accessToken == null) {
         return res.status(401).json({ error: 'Missing access token' });
