@@ -10,6 +10,11 @@ body {
   background-color: #212121;
   color: #ffffff;
 }
+
+.page-title{
+  padding-bottom: 30px;
+}
+
 .player-container {
     width: 300px;
     max-height: 450px;
@@ -130,6 +135,49 @@ body {
   overflow-y: auto;
 }
 
+.spotify-button {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 10%;       /* Adjust size as needed */
+  height: auto;
+  z-index: 1000;     /* Ensure it’s on top of other elements */
+  padding: 10px;
+
+  text-decoration: none;
+  color: white;
+  background-color: #1DB954; /* Spotify green */
+  padding: 10px 20px;
+  border-radius: 25px;
+  display: inline-block;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  text-align: center;
+}
+.spotify-button:hover {
+  background-color: #1ed760;
+}
+
+.privacy-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #1DB954; /* Spotify green */
+  color: white;
+  padding: 10px 15px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: background-color 0.2s;
+  z-index: 9999;
+}
+
+.privacy-button:hover {
+  background-color: #1ed760;
+}
+
 @media (max-width: 1025px) {
   .container {
       flex-direction: column-reverse;
@@ -176,47 +224,20 @@ body {
     width: 80%; /* Ensures playlist items take full available width */
     text-align: center; /* Ensures text is centered inside */
   }
-}
 
-.spotify-button {
-  position: fixed;
+  .spotify-button {
   top: 1rem;
   right: 1rem;
-  width: 10%;       /* Adjust size as needed */
+  width: 20%;
   height: auto;
-  z-index: 1000;     /* Ensure it’s on top of other elements */
-  padding: 10px;
-
-  text-decoration: none;
-  color: white;
-  background-color: #1DB954; /* Spotify green */
-  padding: 10px 20px;
-  border-radius: 25px;
-  display: inline-block;
-  font-size: 16px;
-  font-weight: bold;
-  transition: background-color 0.3s;
-  text-align: center;
-}
-.spotify-button:hover {
-  background-color: #1ed760;
+  font-size: 8pt;
 }
 
-.privacy-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #1DB954; /* Spotify green */
-  color: white;
-  padding: 10px 15px;
-  border-radius: 20px;
-  text-decoration: none;
-  font-size: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  transition: background-color 0.2s;
-  z-index: 9999;
 }
 
-.privacy-button:hover {
-  background-color: #1ed760;
+#errorMessage{
+  font-weight: normal;
+  font-size: 16pt;
+  white-space: pre-wrap; /* reads new lines in js string */
 }
+
