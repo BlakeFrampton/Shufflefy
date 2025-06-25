@@ -347,7 +347,8 @@
         // Check if any playlists were fetched
         if (data.playlists === undefined){
             const errorMessage = document.getElementById('errorMessage');
-            errorMessage.textContent = `Please ensure you have logged in with a Spotify account with Spotify Premium with at least one playlist, this is required for this website to work.
+            errorMessage.textContent = `If playlists are not showing, please wait a few seconds then refresh the page.
+If playlists still don't show, please ensure you have logged in with a Spotify account with Spotify Premium with at least one playlist, this is required for this website to work.
 
 If you have done so and don't see your playlists, try clearing cookies and reopening the site.`;
         } else {
