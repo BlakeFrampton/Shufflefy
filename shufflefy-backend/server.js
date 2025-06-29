@@ -404,8 +404,6 @@ app.post("/db/add-songs", async (req,res) => {
         values.push(songId, userPlaylistId, weight);
         return `($${index * 3 + 1}, $${index * 3 + 2}, $${index * 3 + 3})`; //Each record has parameters ($1, $2, $3), index adjusted
     }).join(", ");
-
-    console.log("placeholders set")
     
     const queryText = `
         INSERT INTO songweight (SongId, UserPlaylistId, weight)
@@ -413,10 +411,7 @@ app.post("/db/add-songs", async (req,res) => {
         ON CONFLICT (SongID, UserPlaylistID) DO NOTHING;
         `;
 
-
-
     try {
-        console.log("query sent: ", placeholders.length);
         await pool.query(queryText, values);
 
     } catch (error) {

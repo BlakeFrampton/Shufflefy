@@ -546,7 +546,6 @@ async function refreshAccessToken() {
         playlistLength = trackUris.length;
         offset = 0;
         while (trackUris.length > offset){
-            console.log("add songs while loop start");
             tracks = trackUris.slice(offset, offset + 500); // Have to limit payload size
             offset += 500;
             try{
