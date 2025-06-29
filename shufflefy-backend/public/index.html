@@ -542,21 +542,29 @@ async function refreshAccessToken() {
     }
 
     async function addSongsToDB(userPlaylistId, trackUris){
-        try{
-            const response = await fetch(rootUri + "/db/add-songs", {
-                method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                body: JSON.stringify({userPlaylistId, trackUris})
-            });
 
-            if (!response.ok) {
-                throw new Error(`Error adding songs: ${response.statusText}`);
+        playlistLength = trackUris.length;
+        offset = 0;
+        while (trackUris.length > offset){
+            console.log("add songs while loop start");
+            tracks = trackUris.slice(offset, offset + 500); // Have to limit payload size
+            offset += 500;
+            try{
+                const response = await fetch(rootUri + "/db/add-songs", {
+                    method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    body: JSON.stringify({userPlaylistId, tracks, playlistLength})
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error adding songs: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error("Error: ", error);
+                return null;
             }
-        } catch (error) {
-            console.error("Error: ", error);
-            return null;
         }
     }
 
