@@ -88,22 +88,7 @@
         if (accessToken){
             player = new Spotify.Player({
                 name: 'Shufflefy',
-                getOAuthToken: async token => {
-                    try {
-                        const response = await fetch(rootUri + "/access-token", {
-                            method: 'GET',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include'
-                        });
-                        if (!response.ok) throw new Error("failed to fetch token");
-
-                        const data = await response.json();
-                        token(data.accessToken);
-
-                    } catch (err) {
-                        console.error("Failed to get token for player:", err);
-                    }
-                },
+                getOAuthToken: callBack => { callBack(accessToken); },
                 volume: 0.5
             });
 

@@ -48,7 +48,7 @@ const spotifyApi = new SpotifyWebApi({
 
 // Redirect to spotify login
 app.get("/login", (req, res) => {
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-private user-read-playback-state user-read-currently-playing streaming playlist-read-private user-modify-playback-state&show_dialog=true`;
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${process.env.SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI)}&scope=user-read-private user-read-playback-state user-read-currently-playing streaming playlist-read-private user-modify-playback-state app-remote-control&show_dialog=true`;
     
     res.redirect(authUrl); // Redirect the user to the Spotify authorization page
 
